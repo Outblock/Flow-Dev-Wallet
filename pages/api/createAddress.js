@@ -86,7 +86,7 @@ export default async function createAddress(req, res) {
     hashAlgorithm = "SHA2_256",
     signatureAlgorithm = "ECDSA_P256",
     weight = 1000,
-  } = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  } = !req.body ? {} : typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
   // Server-side only env vars (not exposed to browser)
   const apikey = process.env.apikey;

@@ -13,12 +13,14 @@ import ImportAddressModel from "./importAddressModal";
 import { KEY_TYPE } from "../../utils/constants";
 import Router from "next/router";
 import { login, set } from "../../account";
+import { motion, AnimatePresence } from "motion/react";
 
 const Import = () => {
   const { store, setStore } = useContext(StoreContext);
   const [isOpen, setIsOpen] = useState(false);
   const [isImport, setIsImport] = useState(false);
   const [importData, setImportData] = useState(null);
+  const [activeTab, setActiveTab] = useState("seed");
 
   const onOpen = () => setIsOpen(true);
   const onOpenChange = (open) => setIsOpen(open);
@@ -31,91 +33,111 @@ const Import = () => {
   };
 
   const handleAddressSelection = (address) => {
-    console.log("handleAddressSelection ==>", address);
-    console.log(
-      "handleAddressSelection ==>",
-      importData.filter((account) => account.address === address)[0],
-      importData
-    );
     const account = importData.filter(
       (account) => account.address === address
     )[0];
 
     const userInfo = { ...store };
-    userInfo.address = address
-    userInfo.keyInfo = account
+    userInfo.address = address;
+    userInfo.keyInfo = account;
     setStore(userInfo);
-    login(userInfo)
+    login(userInfo);
     Router.push("/");
+  };
+
+  const tabContent = {
+    seed: <SeedPhraseImport onOpen={onOpen} onImport={handleImport} />,
+    key: <PrivateKeyImport onOpen={onOpen} onImport={handleImport} />,
+    json: <JsonImport onOpen={onOpen} onImport={handleImport} />,
   };
 
   return (
     <div className={styles.container}>
       <main className={`${styles.main} dark text-foreground bg-background`}>
         <div className="w-1/2 min-w-[calc(max(50%,356px))] max-w-[calc(min(50%,356px))] sm:w-full h-dvh py-5 flex flex-col gap-6 items-center justify-center">
-          <Card
-            className="!h-auto !transition-all max-w-full"
-            style={{ transition: "all .3s ease-in-out" }}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="w-full"
           >
-            <div className="flex flex-col w-full gap-4 px-6 pt-6 items-start">
-              <div className="flex items-center gap-4">
-                <FaKey className="text-2xl" />
-                <h1 className="text-2xl font-bold text-gray-300">
-                  Import Address
-                </h1>
-              </div>
-              <h1 className="text-1xl text-gray-500 pb-3">
-                Import using seed phrase, private key, or JSON keystore
-              </h1>
-            </div>
-            <CardContent
-              className="w-full !h-auto !transition-all"
-              style={{ transition: "all .3s ease-in-out" }}
-            >
-              <EmptyAddressModal
-                isOpen={isOpen}
-                onOpen={onOpen}
-                onOpenChange={onOpenChange}
-              />
-              <ImportAddressModel
-                accounts={importData}
-                handleAddressSelection={handleAddressSelection}
-                isOpen={isImport}
-                onOpen={onImport}
-                onOpenChange={onImportChange}
-                importData={importData}
-              />
-              <div className="flex w-full flex-col">
-                <Tabs defaultValue="seed" className="w-full">
-                  <TabsList className="w-full">
-                    {KEY_TAB.map((item) => (
-                      <TabsTrigger key={item.id} value={item.id} className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          {item.icon}
-                          <span>{item.name}</span>
-                        </div>
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  <TabsContent value="seed">
-                    <SeedPhraseImport
-                      onOpen={onOpen}
-                      onImport={handleImport}
-                    />
-                  </TabsContent>
-                  <TabsContent value="key">
-                    <PrivateKeyImport
-                      onOpen={onOpen}
-                      onImport={handleImport}
-                    />
-                  </TabsContent>
-                  <TabsContent value="json">
-                    <JsonImport onOpen={onOpen} onImport={handleImport} />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="overflow-hidden">
+              <motion.div
+                className="flex flex-col w-full gap-4 px-6 pt-6 items-start"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.35 }}
+              >
+                <div className="flex items-center gap-4">
+                  <motion.div
+                    initial={{ rotate: -20, scale: 0 }}
+                    animate={{ rotate: 0, scale: 1 }}
+                    transition={{ delay: 0.25, type: "spring", stiffness: 260, damping: 20 }}
+                  >
+                    <FaKey className="text-2xl text-[#00EF8B]" />
+                  </motion.div>
+                  <h1 className="text-2xl font-bold text-gray-300">
+                    Import Address
+                  </h1>
+                </div>
+                <p className="text-sm text-gray-500 pb-1">
+                  Import using seed phrase, private key, or JSON keystore
+                </p>
+              </motion.div>
+
+              <CardContent className="w-full">
+                <EmptyAddressModal
+                  isOpen={isOpen}
+                  onOpen={onOpen}
+                  onOpenChange={onOpenChange}
+                />
+                <ImportAddressModel
+                  accounts={importData}
+                  handleAddressSelection={handleAddressSelection}
+                  isOpen={isImport}
+                  onOpen={onImport}
+                  onOpenChange={onImportChange}
+                  importData={importData}
+                />
+                <div className="flex w-full flex-col">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="w-full">
+                      {KEY_TAB.map((item, i) => (
+                        <motion.div
+                          key={item.id}
+                          className="flex-1"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 + i * 0.08, duration: 0.3 }}
+                        >
+                          <TabsTrigger value={item.id} className="w-full">
+                            <div className="flex items-center space-x-2">
+                              {item.icon}
+                              <span>{item.name}</span>
+                            </div>
+                          </TabsTrigger>
+                        </motion.div>
+                      ))}
+                    </TabsList>
+
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                      >
+                        <TabsContent value={activeTab} forceMount>
+                          {tabContent[activeTab]}
+                        </TabsContent>
+                      </motion.div>
+                    </AnimatePresence>
+                  </Tabs>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </main>
     </div>

@@ -24,9 +24,9 @@ import { FaListOl } from "react-icons/fa6";
 import Router from "next/router";
 import { login } from "../../account";
 import toast from "react-hot-toast";
-import { KEY_TYPE, SIGN_ALGO, HASH_ALGO } from "../../utils/constants";
-import { pk2PubKey } from "../../utils/findAddressWithPK";
-import { deriveEvmAddress, deriveEvmAddressFromMnemonic } from "../../utils/evm";
+import { generatePrivateKey, generateMnemonic } from "../../utils/keyManager";
+import { createFlowAccount } from "../../utils/accountManager";
+import { motion, AnimatePresence } from "motion/react";
 
 const SignCard = () => {
   const { store, setStore } = useContext(StoreContext);
@@ -57,44 +57,33 @@ const SignCard = () => {
     if (!registerInfo || !registerInfo.credentialId) return;
     const result = getPKfromRegister(registerInfo);
     setStore((s) => ({ ...s, keyInfo: result, id: registerInfo.credentialId, username, isCreating: true }));
-    createAccount(result.pubK);
+    doCreateAccount(result.pubK);
   }, [registerInfo]);
 
-  const createAccount = async (pubK) => {
+  const doCreateAccount = async (pubK, signatureAlgorithm = "ECDSA_P256", hashAlgorithm = "SHA2_256") => {
     try {
-      const resp = await fetch("/api/createAddress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicKey: pubK, network: store.network }),
-      });
-      const body = await resp.json();
-      if (body.error) {
-        toast.error(body.error);
-        setStore((s) => ({ ...s, isCreating: false }));
-        return;
-      }
-      if (body.txId) setStore((s) => ({ ...s, txId: body.txId }));
+      const txId = await createFlowAccount(pubK, store.network, signatureAlgorithm, hashAlgorithm);
+      if (txId) setStore((s) => ({ ...s, txId }));
     } catch (e) {
       toast.error(e.message);
       setStore((s) => ({ ...s, isCreating: false }));
     }
   };
 
+  // Read algorithm preference from settings (default: secp256k1 + SHA2_256)
+  const prefSigAlgo = store.sigAlgo || "ECDSA_secp256k1";
+  const prefHashAlgo = store.hashAlgo || "SHA2_256";
+
   const handleCreateWithKey = async () => {
     setLoading(true);
     try {
-      const pk = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, "0")).join("");
-      const keys = pk2PubKey(pk);
-      const evmAddress = await deriveEvmAddress(pk);
-      setGeneratedKey({ pk, pubK: keys.P256.pubK });
-      const user = {
-        ...store,
-        keyInfo: { type: KEY_TYPE.PRIVATE_KEY, pk, pubK: keys.P256.pubK, keyIndex: 0, signAlgo: SIGN_ALGO.P256, hashAlgo: HASH_ALGO.SHA256, evmAddress },
-        isCreating: true,
-      };
+      const keyInfo = await generatePrivateKey(prefSigAlgo);
+      keyInfo.hashAlgo = prefHashAlgo;
+      setGeneratedKey({ pk: keyInfo.pk, pubK: keyInfo.pubK });
+      const user = { ...store, keyInfo, isCreating: true };
       setStore(user);
       login(user);
-      await createAccount(keys.P256.pubK);
+      await doCreateAccount(keyInfo.pubK, prefSigAlgo, prefHashAlgo);
     } catch (e) {
       toast.error(e.message);
     }
@@ -132,10 +121,41 @@ const SignCard = () => {
     </Button>
   );
 
+  const handleCreateWithSeed = async () => {
+    setLoading(true);
+    try {
+      const keyInfo = await generateMnemonic(prefSigAlgo);
+      keyInfo.hashAlgo = prefHashAlgo;
+      const user = { ...store, keyInfo, isCreating: true };
+      setStore(user);
+      login(user);
+      toast.success("Seed phrase generated! Save it securely.");
+      await doCreateAccount(keyInfo.pubK, prefSigAlgo, prefHashAlgo);
+    } catch (e) {
+      toast.error(e.message);
+    }
+    setLoading(false);
+  };
+
+  const modeKey = !mode ? "home" : mode === "create" && !createType ? "create" : mode === "create" && createType === "passkey" ? "passkey" : "home";
+
+  const MotionWrap = ({ children }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex flex-col gap-3 w-full"
+    >
+      {children}
+    </motion.div>
+  );
+
   // === Main selector ===
   if (!mode) {
     return (
-      <div className="flex flex-col gap-3 w-full">
+      <AnimatePresence mode="wait">
+      <MotionWrap key="home">
         <Header subtitle="Get started" />
         <Card className="w-full border-zinc-800">
           <CardContent className="flex flex-col gap-2 p-3">
@@ -197,47 +217,16 @@ const SignCard = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </MotionWrap>
+      </AnimatePresence>
     );
   }
-
-  const handleCreateWithSeed = async () => {
-    setLoading(true);
-    try {
-      const { mnemonicToSeedSync, generateMnemonic } = await import("@scure/bip39");
-      const { wordlist } = await import("@scure/bip39/wordlists/english.js");
-      const { HDKey } = await import("@scure/bip32");
-      const { secp256k1 } = await import("@noble/curves/secp256k1.js");
-      const { FLOW_BIP44_PATH } = await import("../../utils/constants");
-
-      const mnemonic = generateMnemonic(wordlist);
-      const seed = mnemonicToSeedSync(mnemonic);
-      const hdKey = HDKey.fromMasterSeed(seed);
-      const child = hdKey.derive(FLOW_BIP44_PATH);
-      const pk = Array.from(child.privateKey).map(b => b.toString(16).padStart(2, "0")).join("");
-      const pubKeyBytes = secp256k1.getPublicKey(child.privateKey, false);
-      const pubK = Array.from(pubKeyBytes).map(b => b.toString(16).padStart(2, "0")).join("").slice(2);
-      const evmAddress = await deriveEvmAddressFromMnemonic(mnemonic);
-
-      const user = {
-        ...store,
-        keyInfo: { type: KEY_TYPE.SEED_PHRASE, pk, pubK, keyIndex: 0, signAlgo: SIGN_ALGO.SECP256K1, hashAlgo: HASH_ALGO.SHA256, mnemonic, evmAddress },
-        isCreating: true,
-      };
-      setStore(user);
-      login(user);
-      toast.success("Seed phrase generated! Save it securely.");
-      await createAccount(pubK);
-    } catch (e) {
-      toast.error(e.message);
-    }
-    setLoading(false);
-  };
 
   // === Create wallet: choose type ===
   if (mode === "create" && !createType) {
     return (
-      <div className="flex flex-col gap-3 w-full">
+      <AnimatePresence mode="wait">
+      <MotionWrap key="create">
         <Header subtitle="Create new wallet" />
         <Card className="w-full border-zinc-800">
           <CardContent className="flex flex-col gap-2 p-3">
@@ -294,14 +283,16 @@ const SignCard = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </MotionWrap>
+      </AnimatePresence>
     );
   }
 
   // === Create with passkey ===
   if (mode === "create" && createType === "passkey") {
     return (
-      <div className="flex flex-col gap-3 w-full">
+      <AnimatePresence mode="wait">
+      <MotionWrap key="passkey">
         <Header subtitle="Create with Passkey" />
         <Card className="w-full border-zinc-800">
           <CardContent className="flex flex-col gap-4 p-5">
@@ -331,7 +322,8 @@ const SignCard = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </MotionWrap>
+      </AnimatePresence>
     );
   }
 

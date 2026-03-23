@@ -4,6 +4,7 @@ import { Badge } from "../../components/ui/badge";
 import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext, useRef, useCallback } from "react";
 import { getEvmChain } from "../../utils/evm";
+import { handleEvmRpc } from "../../utils/evmSigner";
 import styles from "../../styles/Home.module.css";
 import Head from "next/head";
 
@@ -82,68 +83,7 @@ const EVMPopup = () => {
   };
 
   const executeRpc = async (method, params) => {
-    const { createWalletClient, createPublicClient, http } = await import("viem");
-    const { privateKeyToAccount } = await import("viem/accounts");
-
-    const viemChain = {
-      id: chain.chainId,
-      name: chain.name,
-      nativeCurrency: { name: "FLOW", symbol: "FLOW", decimals: 18 },
-      rpcUrls: { default: { http: [chain.rpcUrl] } },
-    };
-
-    const account = privateKeyToAccount(`0x${store.keyInfo.pk}`);
-
-    switch (method) {
-      case "eth_sendTransaction": {
-        const client = createWalletClient({
-          account,
-          chain: viemChain,
-          transport: http(chain.rpcUrl),
-        });
-        const tx = { ...params[0] };
-        if (tx.gas) {
-          tx.gas = BigInt(tx.gas);
-        }
-        if (tx.value) {
-          tx.value = BigInt(tx.value);
-        }
-        if (tx.gasPrice) {
-          tx.gasPrice = BigInt(tx.gasPrice);
-        }
-        if (tx.maxFeePerGas) {
-          tx.maxFeePerGas = BigInt(tx.maxFeePerGas);
-        }
-        if (tx.maxPriorityFeePerGas) {
-          tx.maxPriorityFeePerGas = BigInt(tx.maxPriorityFeePerGas);
-        }
-        return await client.sendTransaction(tx);
-      }
-
-      case "personal_sign": {
-        const message =
-          typeof params[0] === "string" && params[0].startsWith("0x")
-            ? { raw: params[0] }
-            : params[0];
-        return await account.signMessage({ message });
-      }
-
-      case "eth_signTypedData_v4": {
-        const typedData =
-          typeof params[1] === "string" ? JSON.parse(params[1]) : params[1];
-        return await account.signTypedData(typedData);
-      }
-
-      default: {
-        // Proxy read-only methods to RPC
-        const publicClient = createPublicClient({
-          chain: viemChain,
-          transport: http(chain.rpcUrl),
-        });
-        const result = await publicClient.request({ method, params });
-        return result;
-      }
-    }
+    return handleEvmRpc(method, params, store.keyInfo.pk, store.network);
   };
 
   const onApprove = () => {

@@ -13,9 +13,11 @@ function loadSettingsConfig(defaultNetwork) {
       network: saved.network || defaultNetwork,
       rpcUrl: saved.rpcUrl || getDefaultRpc(saved.network || defaultNetwork),
       autoSign: saved.autoSign || false,
+      sigAlgo: saved.sigAlgo || "ECDSA_secp256k1",
+      hashAlgo: saved.hashAlgo || "SHA2_256",
     };
   } catch {
-    return { network: defaultNetwork, rpcUrl: getDefaultRpc(defaultNetwork), autoSign: false };
+    return { network: defaultNetwork, rpcUrl: getDefaultRpc(defaultNetwork), autoSign: false, sigAlgo: "ECDSA_secp256k1", hashAlgo: "SHA2_256" };
   }
 }
 
@@ -48,21 +50,15 @@ async function applyUrlParams(store, setStore) {
   // Apply seed (private key) — derive pubKey, evmAddress, set up keyInfo
   if (seed) {
     try {
-      const { pk2PubKey } = await import("../utils/findAddressWithPK");
-      const { deriveEvmAddress } = await import("../utils/evm");
-      const { KEY_TYPE, SIGN_ALGO, HASH_ALGO } = await import("../utils/constants");
+      const { deriveKeyInfo } = await import("../utils/keyManager");
 
-      const keys = pk2PubKey(seed);
-      const evmAddress = await deriveEvmAddress(seed);
-      updated.keyInfo = {
-        type: KEY_TYPE.PRIVATE_KEY,
+      const savedSigAlgo = updated.sigAlgo || "ECDSA_secp256k1";
+      const savedHashAlgo = updated.hashAlgo || "SHA2_256";
+      updated.keyInfo = await deriveKeyInfo("privateKey", {
         pk: seed,
-        pubK: keys.P256.pubK,
-        keyIndex: 0,
-        signAlgo: SIGN_ALGO.P256,
-        hashAlgo: HASH_ALGO.SHA256,
-        evmAddress,
-      };
+        sigAlgo: savedSigAlgo,
+        hashAlgo: savedHashAlgo,
+      });
 
       // Try to find associated on-chain address
       try {
@@ -77,7 +73,7 @@ async function applyUrlParams(store, setStore) {
             keyIndex: acct.keyIndex,
             signAlgo: acct.signAlgo,
             hashAlgo: acct.hashAlgo,
-            evmAddress: acct.evmAddress || evmAddress,
+            evmAddress: acct.evmAddress || updated.keyInfo.evmAddress,
           };
         }
       } catch (e) {

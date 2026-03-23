@@ -14,6 +14,7 @@ import {
   IoGlobeOutline,
   IoServerOutline,
   IoCreateOutline,
+  IoKeyOutline,
 } from "react-icons/io5";
 import Router from "next/router";
 import fclConfig, { getDefaultRpc } from "../../utils/config";
@@ -25,11 +26,23 @@ const NETWORK_OPTIONS = [
   { key: "emulator", label: "Emulator" },
 ];
 
+const SIG_ALGO_OPTIONS = [
+  { key: "ECDSA_secp256k1", label: "ECDSA secp256k1" },
+  { key: "ECDSA_P256", label: "ECDSA P256" },
+];
+
+const HASH_ALGO_OPTIONS = [
+  { key: "SHA2_256", label: "SHA2-256" },
+  { key: "SHA3_256", label: "SHA3-256" },
+];
+
 export default function Settings() {
   const { store, setStore } = useContext(StoreContext);
   const [selectedNetwork, setSelectedNetwork] = useState(store.network || process.env.network || "testnet");
   const [rpcUrl, setRpcUrl] = useState(store.rpcUrl || getDefaultRpc(selectedNetwork));
   const [autoSign, setAutoSign] = useState(false);
+  const [sigAlgo, setSigAlgo] = useState("ECDSA_secp256k1");
+  const [hashAlgo, setHashAlgo] = useState("SHA2_256");
 
   // Load persisted settings on mount
   useEffect(() => {
@@ -38,36 +51,49 @@ export default function Settings() {
       if (saved.network) setSelectedNetwork(saved.network);
       if (saved.rpcUrl) setRpcUrl(saved.rpcUrl);
       if (saved.autoSign !== undefined) setAutoSign(saved.autoSign);
+      if (saved.sigAlgo) setSigAlgo(saved.sigAlgo);
+      if (saved.hashAlgo) setHashAlgo(saved.hashAlgo);
     } catch {}
   }, []);
 
   // Persist and apply network change
+  const saveConfig = (overrides = {}) => {
+    const config = { network: selectedNetwork, rpcUrl, autoSign, sigAlgo, hashAlgo, ...overrides };
+    localStorage.setItem("settings_config", JSON.stringify(config));
+  };
+
   const handleNetworkChange = (network) => {
     const newRpc = getDefaultRpc(network);
     setSelectedNetwork(network);
     setRpcUrl(newRpc);
     fclConfig(network, newRpc);
     setStore((s) => ({ ...s, network, rpcUrl: newRpc }));
-    saveConfig({ network, rpcUrl: newRpc, autoSign });
+    saveConfig({ network, rpcUrl: newRpc });
   };
 
-  // Persist and apply RPC change
   const handleRpcChange = (value) => {
     setRpcUrl(value);
     fclConfig(selectedNetwork, value);
     setStore((s) => ({ ...s, rpcUrl: value }));
-    saveConfig({ network: selectedNetwork, rpcUrl: value, autoSign });
+    saveConfig({ rpcUrl: value });
   };
 
-  // Persist and apply auto-sign change
   const handleAutoSignChange = (value) => {
     setAutoSign(value);
     setStore((s) => ({ ...s, autoSign: value }));
-    saveConfig({ network: selectedNetwork, rpcUrl, autoSign: value });
+    saveConfig({ autoSign: value });
   };
 
-  const saveConfig = (config) => {
-    localStorage.setItem("settings_config", JSON.stringify(config));
+  const handleSigAlgoChange = (value) => {
+    setSigAlgo(value);
+    setStore((s) => ({ ...s, sigAlgo: value }));
+    saveConfig({ sigAlgo: value });
+  };
+
+  const handleHashAlgoChange = (value) => {
+    setHashAlgo(value);
+    setStore((s) => ({ ...s, hashAlgo: value }));
+    saveConfig({ hashAlgo: value });
   };
 
   const resetRpc = () => {
@@ -147,6 +173,51 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          {/* Flow Key Algorithm */}
+          <Card>
+            <CardContent className="flex flex-col gap-4 p-5">
+              <div className="flex items-center gap-3">
+                <IoKeyOutline className="text-xl text-purple-400" />
+                <div>
+                  <h2 className="text-base font-semibold text-gray-300">Flow Key Algorithm</h2>
+                  <p className="text-xs text-gray-500">Used when creating new wallets. Does not affect passkey (always P256).</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="sig-algo">Signature</Label>
+                  <Select value={sigAlgo} onValueChange={handleSigAlgoChange}>
+                    <SelectTrigger id="sig-algo">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SIG_ALGO_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.key} value={opt.key}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="hash-algo">Hash</Label>
+                  <Select value={hashAlgo} onValueChange={handleHashAlgoChange}>
+                    <SelectTrigger id="hash-algo">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HASH_ALGO_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.key} value={opt.key}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Auto-Sign */}
           <Card>
             <CardContent className="p-5">
@@ -184,6 +255,7 @@ export default function Settings() {
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">{selectedNetwork}</Badge>
                   <Badge variant="secondary" className="max-w-[280px] truncate">{rpcUrl}</Badge>
+                  <Badge variant="secondary" className="font-mono text-[10px]">{sigAlgo} + {hashAlgo}</Badge>
                   <Badge variant="secondary" className={autoSign ? "bg-orange-500/20 text-orange-400 border-orange-500/30" : ""}>
                     auto-sign: {autoSign ? "on" : "off"}
                   </Badge>
