@@ -52,6 +52,10 @@ const Authz = () => {
       response.extensions = [result.extensionData];
     }
     fcl.WalletUtils.approve(response);
+    // Auto-close popup after approval in auto-sign mode
+    if (store.autoSign) {
+      setTimeout(() => window.close(), 200);
+    }
   };
 
   const onReject = () => {

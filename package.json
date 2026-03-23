@@ -31,6 +31,7 @@
     "viem": "^2.47.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/react": "18.2.46",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
