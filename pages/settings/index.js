@@ -19,6 +19,7 @@ import {
 import Router from "next/router";
 import fclConfig, { getDefaultRpc } from "../../utils/config";
 import { set, KEYS, load } from "../../account";
+import { getWhitelist, setWhitelist } from "../../utils/autoSign";
 
 const NETWORK_OPTIONS = [
   { key: "mainnet", label: "Mainnet" },
@@ -43,6 +44,8 @@ export default function Settings() {
   const [autoSign, setAutoSign] = useState(false);
   const [sigAlgo, setSigAlgo] = useState("ECDSA_secp256k1");
   const [hashAlgo, setHashAlgo] = useState("SHA2_256");
+  const [whitelist, setWhitelistState] = useState([]);
+  const [newOrigin, setNewOrigin] = useState("");
 
   // Load persisted settings on mount
   useEffect(() => {
@@ -54,6 +57,7 @@ export default function Settings() {
       if (saved.sigAlgo) setSigAlgo(saved.sigAlgo);
       if (saved.hashAlgo) setHashAlgo(saved.hashAlgo);
     } catch {}
+    setWhitelistState(getWhitelist());
   }, []);
 
   // Persist and apply network change
@@ -219,23 +223,27 @@ export default function Settings() {
           </Card>
 
           {/* Auto-Sign */}
-          <Card>
+          <Card className={autoSign ? "border-red-500/40" : ""}>
             <CardContent className="p-5">
               <div className="flex items-center gap-4">
-                <IoCreateOutline className="text-xl text-orange-400" />
+                <IoCreateOutline className={`text-xl ${autoSign ? "text-red-400" : "text-orange-400"}`} />
                 <div className="flex flex-col grow">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-sm text-gray-300">Auto-Sign</p>
                     {autoSign && (
-                      <Badge variant="secondary" className="text-xs bg-orange-500/20 text-orange-400 border-orange-500/30">
+                      <Badge variant="secondary" className="text-xs bg-red-500/20 text-red-400 border-red-500/30">
                         ON
                       </Badge>
                     )}
                   </div>
                   <p className="text-xs text-gray-500">
-                    Automatically approve transactions and sign messages without confirmation popup.
-                    Useful for automated testing and development.
+                    Automatically approve transactions and sign messages without confirmation.
                   </p>
+                  {autoSign && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Requires <code className="bg-zinc-800 px-1 rounded">?autoSign=true</code> URL param to activate. Only whitelisted origins are auto-signed.
+                    </p>
+                  )}
                 </div>
                 <Switch
                   checked={autoSign}
@@ -244,6 +252,72 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Auto-Sign Whitelist — only show when auto-sign is on */}
+          {autoSign && (
+            <Card className="border-red-500/20">
+              <CardContent className="flex flex-col gap-3 p-5">
+                <div className="flex items-center gap-3">
+                  <IoGlobeOutline className="text-xl text-red-400" />
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-300">Auto-Sign Allowed Origins</h2>
+                    <p className="text-xs text-gray-500">Only dApps from these origins will be auto-signed.</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {whitelist.map((origin) => (
+                    <Badge
+                      key={origin}
+                      variant="secondary"
+                      className="bg-zinc-800 text-gray-300 border-zinc-700 gap-1 pr-1"
+                    >
+                      {origin}
+                      <button
+                        onClick={() => {
+                          const updated = whitelist.filter((o) => o !== origin);
+                          setWhitelist(updated);
+                          setWhitelistState(updated);
+                        }}
+                        className="ml-1 text-zinc-500 hover:text-red-400 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. myapp.com"
+                    value={newOrigin}
+                    onChange={(e) => setNewOrigin(e.target.value)}
+                    className="bg-zinc-900/50 border-zinc-700 text-sm h-8"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newOrigin.trim()) {
+                        const updated = [...whitelist, newOrigin.trim()];
+                        setWhitelist(updated);
+                        setWhitelistState(updated);
+                        setNewOrigin("");
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs border-zinc-700"
+                    disabled={!newOrigin.trim()}
+                    onClick={() => {
+                      const updated = [...whitelist, newOrigin.trim()];
+                      setWhitelist(updated);
+                      setWhitelistState(updated);
+                      setNewOrigin("");
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Info */}
           <Card>

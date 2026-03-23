@@ -7,6 +7,7 @@ import { getEvmChain } from "../../utils/evm";
 import { handleEvmRpc } from "../../utils/evmSigner";
 import { FaCircleCheck } from "react-icons/fa6";
 import { RiGlobalLine } from "react-icons/ri";
+import { shouldAutoSign } from "../../utils/autoSign";
 import styles from "../../styles/Home.module.css";
 import Head from "next/head";
 
@@ -28,6 +29,9 @@ const EVMPopup = () => {
 
   const chain = getEvmChain(store.network);
   const evmAddress = store.keyInfo?.evmAddress;
+  const dAppOrigin = typeof window !== "undefined"
+    ? (document.referrer ? new URL(document.referrer).hostname : "localhost")
+    : "localhost";
 
   const postToOpener = useCallback((type, data) => {
     const target = window.opener || window.parent;
@@ -52,7 +56,7 @@ const EVMPopup = () => {
 
   // Auto-approve connection when autoSign is enabled
   useEffect(() => {
-    if (phase === "connect" && store.autoSign && evmAddress) {
+    if (phase === "connect" && shouldAutoSign(store, dAppOrigin) && evmAddress) {
       onApproveConnect();
     }
   }, [phase, store.autoSign, evmAddress]);
@@ -73,7 +77,7 @@ const EVMPopup = () => {
       ];
 
       if (signingMethods.includes(method)) {
-        if (store.autoSign && !autoProcessed.current.has(id)) {
+        if (shouldAutoSign(store, dAppOrigin) && !autoProcessed.current.has(id)) {
           autoProcessed.current.add(id);
           handleRpc(id, method, params);
         } else {
@@ -140,10 +144,7 @@ const EVMPopup = () => {
     setPendingRequest(null);
   };
 
-  // Get the opener's origin for display
-  const dAppOrigin = typeof window !== "undefined"
-    ? (document.referrer ? new URL(document.referrer).hostname : "Unknown dApp")
-    : "Unknown dApp";
+  // dAppOrigin is defined at the top of the component
 
   // No account loaded
   if (!evmAddress) {
@@ -261,14 +262,14 @@ const EVMPopup = () => {
                 <Badge variant="secondary" className="bg-zinc-800 text-gray-300">{chain.name}</Badge>
                 <Badge variant="secondary" className="bg-zinc-800 text-gray-300">Chain {chain.chainId}</Badge>
               </div>
-              {store.autoSign && (
+              {shouldAutoSign(store) && (
                 <Badge variant="outline" className="w-fit border-yellow-600 text-yellow-500 bg-yellow-950/30">Auto-sign enabled</Badge>
               )}
             </CardContent>
           </Card>
 
           {/* Pending request approval */}
-          {pendingRequest && !store.autoSign && (
+          {pendingRequest && !shouldAutoSign(store) && (
             <Card className="border-zinc-800 bg-zinc-900/90">
               <CardContent className="flex flex-col gap-3 p-5">
                 <h3 className="text-sm font-bold text-gray-300">Signature Request</h3>

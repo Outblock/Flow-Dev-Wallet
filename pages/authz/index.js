@@ -9,6 +9,7 @@ import { RiGlobalLine } from "react-icons/ri";
 import styles from "../../styles/Home.module.css";
 import Head from "next/head";
 import { signWithKey } from "../../utils/sign";
+import { shouldAutoSign } from "../../utils/autoSign";
 
 const Authz = () => {
   const { store } = useContext(StoreContext);
@@ -27,7 +28,7 @@ const Authz = () => {
 
   // Auto-sign when enabled
   useEffect(() => {
-    if (authzInfo && store.autoSign && !autoSigned.current) {
+    if (authzInfo && shouldAutoSign(store) && !autoSigned.current) {
       autoSigned.current = true;
       console.log("[authz] auto-signing...");
       onApproval();
@@ -49,7 +50,7 @@ const Authz = () => {
     }
     fcl.WalletUtils.approve(response);
     // Auto-close popup after approval in auto-sign mode
-    if (store.autoSign) {
+    if (shouldAutoSign(store)) {
       setTimeout(() => window.close(), 200);
     }
   };

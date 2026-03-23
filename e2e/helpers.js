@@ -54,6 +54,13 @@ export async function setupWallet(page, options = {}) {
     },
     { timeout: waitMs + 5000 }
   );
+
+  // Ensure autoSign_session marker is set for popup auto-sign to work
+  if (options.autoSign) {
+    await page.evaluate(() => {
+      localStorage.setItem('autoSign_session', JSON.stringify({ ts: Date.now() }));
+    });
+  }
 }
 
 /**

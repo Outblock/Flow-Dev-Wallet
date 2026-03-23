@@ -4,6 +4,7 @@ import { StoreContext } from "../contexts";
 import fclConfig, { getDefaultRpc } from "../utils/config";
 import { load, login } from "../account";
 import toast, { Toaster } from 'react-hot-toast';
+import { markSessionAutoSign, shouldAutoSign } from "../utils/autoSign";
 
 function loadSettingsConfig(defaultNetwork) {
   if (typeof window === 'undefined') return { network: defaultNetwork, rpcUrl: getDefaultRpc(defaultNetwork), autoSign: false };
@@ -42,9 +43,12 @@ async function applyUrlParams(store, setStore) {
     updated.rpcUrl = getDefaultRpc(network);
   }
 
-  // Apply autoSign
-  if (autoSign != null) {
-    updated.autoSign = autoSign === 'true';
+  // Apply autoSign — mark session so popups know it was activated via URL
+  if (autoSign === 'true') {
+    updated.autoSign = true;
+    markSessionAutoSign();
+  } else if (autoSign != null) {
+    updated.autoSign = false;
   }
 
   // Apply seed (private key) — derive pubKey, evmAddress, set up keyInfo
@@ -139,6 +143,11 @@ function MyApp({ Component, pageProps }) {
       }}/>
       <StoreContext.Provider value={{ store, setStore }}>
         <main className="dark text-foreground bg-background">
+          {shouldAutoSign(store) && (
+            <div className="bg-red-600/90 text-white text-center py-1.5 px-4 text-xs font-semibold tracking-wide">
+              AUTO-SIGN ACTIVE — All transactions will be signed automatically. Do not use with real funds.
+            </div>
+          )}
           <Component {...pageProps} />
         </main>
       </StoreContext.Provider>

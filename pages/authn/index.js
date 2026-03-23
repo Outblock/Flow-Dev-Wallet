@@ -8,6 +8,7 @@ import { FaCircleCheck } from "react-icons/fa6";
 import styles from "../../styles/Home.module.css";
 import Head from "next/head";
 import { signWithKey } from "../../utils/sign";
+import { shouldAutoSign } from "../../utils/autoSign";
 
 const Authn = () => {
   const { store } = useContext(StoreContext);
@@ -32,7 +33,8 @@ const Authn = () => {
 
   // Auto-approve when auto-sign is enabled
   useEffect(() => {
-    if (authnInfo && store.autoSign && store.address && store.keyInfo && !autoApproved.current) {
+    const dAppOrigin = authnInfo?.config?.client?.hostname || "localhost";
+    if (authnInfo && shouldAutoSign(store, dAppOrigin) && store.address && store.keyInfo && !autoApproved.current) {
       autoApproved.current = true;
       console.log("[authn] auto-approving...");
       onApproval();
@@ -120,7 +122,7 @@ const Authn = () => {
     setStatus("approved");
     fcl.WalletUtils.approve(response);
     // Auto-close popup after approval in auto-sign mode
-    if (store.autoSign) {
+    if (shouldAutoSign(store)) {
       setTimeout(() => window.close(), 200);
     }
   };
