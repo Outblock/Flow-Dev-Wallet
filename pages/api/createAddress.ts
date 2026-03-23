@@ -49,7 +49,7 @@ async function createAccountOnEmulator({ publicKey, signatureAlgorithm, hashAlgo
 
   const signFn = async (signable: any) => {
     const ec = new EC("p256");
-    const messageHash = await sha256(Buffer.from(signable.message, "hex"));
+    const messageHash = await sha256(Buffer.from(signable.message, "hex").buffer as ArrayBuffer);
     const key = ec.keyFromPrivate(Buffer.from(emulatorPrivateKey, "hex"));
     const sig = key.sign(new Uint8Array(messageHash));
     const n = 32;

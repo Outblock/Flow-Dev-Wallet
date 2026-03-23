@@ -34,7 +34,9 @@ const EVMPopup = () => {
   const autoProcessed = useRef(new Set<string | number>());
 
   const chain = getEvmChain(store.network);
-  const evmAddress = store.keyInfo?.evmAddress;
+  // Prefer smart wallet address (4337) over EOA address
+  const evmAddress = store.keyInfo?.smartWalletAddress || store.keyInfo?.evmAddress;
+  const isSmartWallet = !!store.keyInfo?.smartWalletAddress;
   const dAppOrigin = typeof window !== "undefined"
     ? (document.referrer ? new URL(document.referrer).hostname : "localhost")
     : "localhost";

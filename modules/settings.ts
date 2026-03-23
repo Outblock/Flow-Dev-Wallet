@@ -94,14 +94,14 @@ export function readSettings(): Settings {
 			settings = JSON.parse(s as string);
 		} catch {
 		}
-		if ("rp" in settings) {
-			delete settings.rp;
+		if ("rp" in (settings as any)) {
+			delete (settings as any).rp;
 		}
-		if ("user" in settings) {
-			delete settings.user;
+		if ("user" in (settings as any)) {
+			delete (settings as any).user;
 		}
 		if (!("credentials" in settings)) {
-			settings.credentials = {};
+			(settings as any).credentials = {};
 		}
 	}
 	return settings;

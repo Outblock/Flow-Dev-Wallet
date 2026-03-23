@@ -10,6 +10,7 @@
     "lint": "bun next lint"
   },
   "dependencies": {
+    "@flowindex/evm-wallet": "^0.1.0",
     "@flowindex/flow-passkey": "latest",
     "@flowindex/flow-signer": "latest",
     "@onflow/fcl": "^1.21.9",

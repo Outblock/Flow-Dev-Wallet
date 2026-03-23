@@ -128,8 +128,8 @@ const ActivityList = () => {
   const { data: flowTxs, loading: flowLoading, error: flowError } = useFlowTransactions(store.address);
   const { data: evmTxs, loading: evmLoading, error: evmError } = useEvmTransactions(evmAddress);
 
-  const flowList: FlowTx[] = flowTxs?.data || flowTxs?.transactions || (Array.isArray(flowTxs) ? flowTxs : []);
-  const evmList: EvmTx[] = evmTxs?.data || evmTxs?.items || (Array.isArray(evmTxs) ? evmTxs : []);
+  const flowList: FlowTx[] = (flowTxs as any)?.data || (flowTxs as any)?.transactions || (Array.isArray(flowTxs) ? flowTxs : []);
+  const evmList: EvmTx[] = (evmTxs as any)?.data || (evmTxs as any)?.items || (Array.isArray(evmTxs) ? evmTxs : []);
 
   return (
     <div className="flex flex-col gap-2">

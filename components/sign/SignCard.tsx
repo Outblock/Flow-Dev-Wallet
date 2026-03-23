@@ -130,8 +130,22 @@ const SignCard = () => {
   useEffect(() => {
     if (!registerInfo || !registerInfo.credentialId) return;
     const result = getPKfromRegister(registerInfo);
-    setStore((s: any) => ({ ...s, keyInfo: result, id: registerInfo.credentialId, username, isCreating: true }));
-    doCreateAccount(result.pubK);
+
+    // Derive smart wallet address for passkey (async)
+    (async () => {
+      try {
+        const { getSmartWalletAddress } = await import("../../utils/smartWallet");
+        const smartWalletAddress = await getSmartWalletAddress(
+          registerInfo.publicKeySec1Hex,
+          store.network || "testnet"
+        );
+        result.smartWalletAddress = smartWalletAddress;
+      } catch (e) {
+        console.warn("[passkey] Could not derive smart wallet address:", e);
+      }
+      setStore((s: any) => ({ ...s, keyInfo: result, id: registerInfo.credentialId, username, isCreating: true }));
+      doCreateAccount(result.pubK);
+    })();
   }, [registerInfo]);
 
   const doCreateAccount = async (pubK: string, signatureAlgorithm = "ECDSA_P256", hashAlgorithm = "SHA2_256") => {
@@ -446,7 +460,7 @@ const SignCard = () => {
               disabled={!username.trim()}
               onClick={async () => {
                 try {
-                  setRegisterInfo(await createPasskey(username, username));
+                  setRegisterInfo(await createPasskey(username));
                 } catch (e) {
                   toast.error("Passkey registration failed");
                 }

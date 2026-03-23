@@ -28,7 +28,7 @@ const getPayerKeyIndex = (): number => {
 
 const sign = async (signableMessage: string): Promise<string> => {
   const ec = new EC("p256");
-  const messageHash = await sha256(Buffer.from(signableMessage, "hex"));
+  const messageHash = await sha256(Buffer.from(signableMessage, "hex").buffer as ArrayBuffer);
   const privateKey = getPayerPrivateKey();
   const key = ec.keyFromPrivate(Buffer.from(privateKey, "hex"));
   const sig = key.sign(new Uint8Array(messageHash));

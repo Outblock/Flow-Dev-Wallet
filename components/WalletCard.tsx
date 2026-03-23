@@ -31,6 +31,7 @@ const WalletCard = ({ address }: WalletCardProps) => {
   const [chainTab, setChainTab] = useState("flow");
 
   const evmAddress = store.keyInfo?.evmAddress;
+  const smartWalletAddress = store.keyInfo?.smartWalletAddress;
   const network = store.network || "testnet";
 
   const copyAddr = (addr: string) => {
@@ -84,6 +85,15 @@ const WalletCard = ({ address }: WalletCardProps) => {
                 <Badge variant="secondary" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20 font-mono px-1.5">EVM</Badge>
                 <code className="font-mono text-[11px] text-zinc-400 truncate flex-1">{evmAddress}</code>
                 <button onClick={() => copyAddr(evmAddress)} className="text-zinc-600 hover:text-zinc-300 transition-colors">
+                  <LuCopy className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            {smartWalletAddress && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20 font-mono px-1.5">4337</Badge>
+                <code className="font-mono text-[11px] text-zinc-400 truncate flex-1">{smartWalletAddress}</code>
+                <button onClick={() => copyAddr(smartWalletAddress)} className="text-zinc-600 hover:text-zinc-300 transition-colors">
                   <LuCopy className="h-3 w-3" />
                 </button>
               </div>

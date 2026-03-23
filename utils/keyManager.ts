@@ -1,7 +1,7 @@
 import { deriveEvmAddress, deriveEvmAddressFromMnemonic } from "./evm";
 import { FLOW_BIP44_PATH, KEY_TYPE } from "./constants";
 
-interface KeyInfo {
+export interface KeyInfo {
   type: string;
   pk: string;
   pubK: string;
@@ -10,6 +10,7 @@ interface KeyInfo {
   hashAlgo: string;
   mnemonic?: string;
   evmAddress: string;
+  smartWalletAddress?: string;
 }
 
 /**
