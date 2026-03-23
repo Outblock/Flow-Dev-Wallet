@@ -34,7 +34,7 @@ export function flowDevWallet(options: FlowDevWalletOptions = {}): (params: any)
       id: "flow-dev-wallet",
       name: "Flow Dev Wallet",
       iconUrl: ICON_SVG,
-      iconBackground: "#00EF8B",
+      iconBackground: "#181818",
       installed: true,
 
       createConnector: (walletDetails: any) =>
