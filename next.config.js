@@ -6,7 +6,7 @@ const nextConfig = {
     // Public (exposed to browser)
     host: process.env.host || 'http://localhost:3003',
     network: process.env.network || 'testnet',
-    flowindexUrl: process.env.flowindexUrl || 'https://flowindex.io/api',
+    // flowindexUrl is now auto-resolved by utils/flowindex.js based on network
     emulatorAddress: process.env.emulatorAddress || 'http://localhost:8888',
     emulatorDiscoveryWallet: process.env.emulatorDiscoveryWallet || 'http://localhost:8701/fcl/authn',
     emulatorServiceAddress: process.env.emulatorServiceAddress || '0xf8d6e0586b0a20c7',

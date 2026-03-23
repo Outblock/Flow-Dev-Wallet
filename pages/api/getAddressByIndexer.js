@@ -1,5 +1,6 @@
-async function queryFlowIndex(publicKey) {
-    const flowindexUrl = process.env.flowindexUrl || "https://flowindex.io/api";
+async function queryFlowIndex(publicKey, network) {
+    const net = network || process.env.network || "testnet";
+    const flowindexUrl = net === "testnet" ? "https://testnet.flowindex.io/api" : "https://flowindex.io/api";
     const url = `${flowindexUrl}/flow/key/${publicKey}`;
     console.log("flowindex url ==>", url);
     const result = await fetch(url);
@@ -24,13 +25,13 @@ async function queryFlowIndex(publicKey) {
   }
 
   export default async function getAddressByIndexer(req, res) {
-    const { publicKey } = req.query;
-    console.log("publicKey ==>", publicKey);
+    const { publicKey, network } = req.query;
+    console.log("publicKey ==>", publicKey, "network ==>", network);
 
     // Try flowindex first, fallback to old key-indexer
     let accounts = null;
     try {
-      accounts = await queryFlowIndex(publicKey);
+      accounts = await queryFlowIndex(publicKey, network);
     } catch (e) {
       console.log("flowindex error, trying old indexer:", e.message);
     }

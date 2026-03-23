@@ -1,5 +1,5 @@
 import * as fcl from "@onflow/fcl";
-import {send as httpSend} from "@onflow/transport-http"
+import {httpTransport} from "@onflow/transport-http"
 
 const DEFAULT_RPC = {
     mainnet: "https://rest-mainnet.onflow.org",
@@ -18,7 +18,7 @@ export default function fclConfig(network, customRpc) {
 
     fcl.config()
         .put("accessNode.api", rpc)
-        .put("sdk.transport", httpSend)
+        .put("sdk.transport", httpTransport)
         .put("flow.network", net)
 
     if (net === 'emulator') {

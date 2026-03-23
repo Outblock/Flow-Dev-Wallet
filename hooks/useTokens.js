@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
-import { getFlowTokens, getFlowNFTs, getEvmTokens, getEvmNFTs } from '../utils/flowindex';
+import { useState, useEffect, useContext } from 'react';
+import { getFlowTokens, getFlowNFTs, getEvmTokens, getEvmNFTs, getFlowTransactions, getEvmTransactions } from '../utils/flowindex';
+import { StoreContext } from '../contexts';
 
 function useFetchData(fetchFn, key) {
+  const { store } = useContext(StoreContext);
+  const network = store?.network;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -10,11 +13,11 @@ function useFetchData(fetchFn, key) {
     if (!key) return;
     setLoading(true);
     setError(null);
-    fetchFn(key)
+    fetchFn(key, network)
       .then(setData)
       .catch(setError)
       .finally(() => setLoading(false));
-  }, [key]);
+  }, [key, network]);
 
   return { data, loading, error };
 }
@@ -33,4 +36,12 @@ export function useEvmTokens(evmAddress) {
 
 export function useEvmNFTs(evmAddress) {
   return useFetchData(getEvmNFTs, evmAddress);
+}
+
+export function useFlowTransactions(address) {
+  return useFetchData(getFlowTransactions, address);
+}
+
+export function useEvmTransactions(evmAddress) {
+  return useFetchData(getEvmTransactions, evmAddress);
 }

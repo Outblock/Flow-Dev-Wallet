@@ -1,192 +1,163 @@
-import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
-import { Avatar, AvatarFallback } from "../components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
-import { Separator } from "../components/ui/separator";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Separator } from "./ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { StoreContext } from "../contexts";
 import { useState, useContext } from "react";
-import { FaWallet } from "react-icons/fa";
-import KeyInfoCard from "./setting/KeyInfoCard";
-import * as fcl from "@onflow/fcl";
-import { IoExitOutline } from "react-icons/io5";
-import { LuCopy } from "react-icons/lu";
-import {
-  IoArrowUpOutline,
-  IoArrowDownOutline,
-  IoAddOutline,
-  IoSwapHorizontalOutline,
-} from "react-icons/io5";
+import { LuCopy, LuLogOut, LuArrowUpRight, LuArrowDownLeft, LuArrowLeftRight, LuWallet, LuList, LuBox, LuSettings } from "react-icons/lu";
 import SignOut from "./sign/SignOut";
-import { CustomTab } from "./tab/CustomTab";
 import Setting from "./setting/Setting";
 import TokenList from "./token/TokenList";
 import EvmTokenList from "./token/EvmTokenList";
-import { IoCardOutline } from "react-icons/io5";
-import { isEnableBiometric } from "../account";
-import { TAB } from "./tab/Tab";
+import ActivityList from "./activity/ActivityList";
 import toast from "react-hot-toast";
 
 const WalletCard = ({ address }) => {
-  const { store, setStore } = useContext(StoreContext);
+  const { store } = useContext(StoreContext);
   const [signOutOpen, setSignOutOpen] = useState(false);
-  const [selected, setSelected] = useState("Token");
+  const [activeTab, setActiveTab] = useState("tokens");
   const [chainTab, setChainTab] = useState("flow");
 
   const evmAddress = store.keyInfo?.evmAddress;
+  const network = store.network || "testnet";
 
-  const copyAddress = (addr) => {
+  const copyAddr = (addr) => {
     navigator.clipboard.writeText(addr);
     toast.success("Copied!");
   };
 
+  const TAB_ITEMS = [
+    { id: "tokens", icon: LuWallet, label: "Tokens" },
+    { id: "activity", icon: LuList, label: "Activity" },
+    { id: "nfts", icon: LuBox, label: "NFTs" },
+    { id: "settings", icon: LuSettings, label: "Settings" },
+  ];
+
   return (
-    <Card className="w-full h-full">
-      <CardHeader className="flex flex-col w-full gap-4 px-6 pt-6 pb-0 space-y-0">
-        <div className="flex items-center gap-4 w-full">
-          <FaWallet className="text-2xl" />
-          <h1 className="text-3xl font-bold text-gray-300">Flow Wallet</h1>
-          <div className="grow" />
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Exit"
-                  onClick={() => setSignOutOpen(true)}
-                >
-                  <IoExitOutline className="text-2xl text-red-500" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Log out</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+    <div className="flex flex-col w-full h-[85vh] max-h-[700px]">
+      <SignOut isOpen={signOutOpen} onOpen={() => setSignOutOpen(true)} onOpenChange={setSignOutOpen} />
 
-        <Card className="w-full">
-          <CardContent className="px-4 py-3">
-            <div className="flex items-center gap-6">
-              <Avatar className={`h-10 w-10 ${process.env.network !== "mainnet" ? "ring-2 ring-green-500" : ""}`}>
-                <AvatarFallback className="text-2xl bg-yellow-500">🤑</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col items-start gap-2 grow min-w-0">
-                <div className="flex gap-2 items-center">
-                  <h1 className="font-bold">{store.username || "Name"}</h1>
-                  {process.env.network !== "mainnet" && (
-                    <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 uppercase text-xs">
-                      {process.env.network}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 w-full">
-                  <Badge className="text-xs bg-blue-500/15 text-blue-400 border-blue-500/30">Flow</Badge>
-                  <code className="font-mono text-sm text-gray-400 truncate">{store.address}</code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    onClick={() => copyAddress(store.address)}
-                  >
-                    <LuCopy className="text-sm" />
-                  </Button>
-                </div>
-                {evmAddress && (
-                  <div className="flex items-center gap-2 w-full">
-                    <Badge variant="secondary" className="text-xs bg-purple-500/15 text-purple-400 border-purple-500/30">EVM</Badge>
-                    <code className="font-mono text-sm text-gray-400 truncate">{evmAddress}</code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => copyAddress(evmAddress)}
-                    >
-                      <LuCopy className="text-sm" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center w-full gap-4">
-          <div className="flex basis-3/4 w-full grow gap-0">
-            <Button className="w-full rounded-r-none" onClick={() => toast('Coming Soon', {icon: '🚧'})}>
-              <IoArrowUpOutline className="text-lg" />
-              <p className="hidden sm:block">Send</p>
-            </Button>
-            <Button className="w-full rounded-none border-x-0" onClick={() => toast('Coming Soon', {icon: '🚧'})}>
-              <IoSwapHorizontalOutline className="text-lg" />
-              <p className="hidden sm:block">Swap</p>
-            </Button>
-            <Button className="w-full rounded-l-none" onClick={() => toast('Coming Soon', {icon: '🚧'})}>
-              <IoArrowDownOutline className="text-lg" />
-              <p className="hidden sm:block">Receive</p>
-            </Button>
+      {/* ═══ Header ═══ */}
+      <div className="flex flex-col gap-3 pb-3">
+        {/* Title row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold tracking-tight">Flow Dev Wallet</span>
+            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-mono">
+              {network}
+            </Badge>
           </div>
-
           <Button
-            className="basis-1/4 w-full"
-            onClick={() => toast('Coming Soon', {icon: '🚧'})}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-zinc-500 hover:text-red-400"
+            onClick={() => setSignOutOpen(true)}
           >
-            <IoCardOutline className="text-lg" />
-            <p className="hidden sm:block">Buy</p>
+            <LuLogOut className="h-4 w-4" />
           </Button>
         </div>
 
-        <Separator />
-      </CardHeader>
-
-      <CardContent className="flex flex-col px-6 p-2">
-        <SignOut isOpen={signOutOpen} onOpen={() => setSignOutOpen(true)} onOpenChange={setSignOutOpen} />
-        <Tabs
-          value={selected}
-          onValueChange={setSelected}
-          className="hidden"
-        >
-          <TabsList className="w-full">
-            {TAB.map((item) => (
-              <TabsTrigger key={item.id} value={item.id} className="flex-1">
-                {item.id}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent value="Token" className="!mt-0 h-full py-0">
-            <div className="flex flex-col gap-2 h-full">
-              {evmAddress && (
-                <Tabs
-                  value={chainTab}
-                  onValueChange={setChainTab}
-                >
-                  <TabsList className="bg-transparent gap-4 h-8 p-0">
-                    <TabsTrigger value="flow" className="px-2 h-8 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Flow</TabsTrigger>
-                    <TabsTrigger value="evm" className="px-2 h-8 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">EVM</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              )}
-              {chainTab === "flow" ? (
-                <TokenList />
-              ) : (
-                <EvmTokenList evmAddress={evmAddress} />
-              )}
+        {/* Address card */}
+        <Card className="border-zinc-800/60 bg-zinc-900/40">
+          <CardContent className="p-3 flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Badge className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20 font-mono px-1.5">Flow</Badge>
+              <code className="font-mono text-[11px] text-zinc-400 truncate flex-1">{address}</code>
+              <button onClick={() => copyAddr(address)} className="text-zinc-600 hover:text-zinc-300 transition-colors">
+                <LuCopy className="h-3 w-3" />
+              </button>
             </div>
-          </TabsContent>
-          <TabsContent value="NFT" className="!mt-0 h-full py-0">
-            <p> This is a NFT Tab </p>
-          </TabsContent>
-          <TabsContent value="Setting" className="!mt-0 h-full py-0">
-            <Setting />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      <CardFooter className="w-full">
-        <CustomTab selected={selected} setSelected={setSelected} />
-      </CardFooter>
-    </Card>
+            {evmAddress && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20 font-mono px-1.5">EVM</Badge>
+                <code className="font-mono text-[11px] text-zinc-400 truncate flex-1">{evmAddress}</code>
+                <button onClick={() => copyAddr(evmAddress)} className="text-zinc-600 hover:text-zinc-300 transition-colors">
+                  <LuCopy className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Action buttons — compact row */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            { icon: LuArrowUpRight, label: "Send" },
+            { icon: LuArrowDownLeft, label: "Receive" },
+            { icon: LuArrowLeftRight, label: "Swap" },
+            { icon: LuWallet, label: "Buy" },
+          ].map(({ icon: Icon, label }) => (
+            <button
+              key={label}
+              onClick={() => toast("Coming Soon", { icon: "🚧" })}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700/40 transition-all text-zinc-400 hover:text-zinc-200"
+            >
+              <Icon className="h-4 w-4" />
+              <span className="text-[10px] font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Separator className="opacity-30" />
+
+      {/* ═══ Content — scrollable ═══ */}
+      <div className="flex-1 overflow-y-auto min-h-0 py-2">
+        {activeTab === "tokens" && (
+          <div className="flex flex-col gap-1">
+            {evmAddress && (
+              <div className="flex gap-3 px-1 pb-2">
+                <button
+                  onClick={() => setChainTab("flow")}
+                  className={`text-xs font-medium pb-1 border-b-2 transition-colors ${chainTab === "flow" ? "border-emerald-500 text-zinc-200" : "border-transparent text-zinc-500 hover:text-zinc-400"}`}
+                >
+                  Flow
+                </button>
+                <button
+                  onClick={() => setChainTab("evm")}
+                  className={`text-xs font-medium pb-1 border-b-2 transition-colors ${chainTab === "evm" ? "border-purple-500 text-zinc-200" : "border-transparent text-zinc-500 hover:text-zinc-400"}`}
+                >
+                  EVM
+                </button>
+              </div>
+            )}
+            {chainTab === "flow" ? <TokenList /> : <EvmTokenList evmAddress={evmAddress} />}
+          </div>
+        )}
+
+        {activeTab === "activity" && <ActivityList />}
+
+        {activeTab === "nfts" && (
+          <div className="flex flex-col items-center justify-center py-12 text-zinc-600">
+            <LuBox className="h-8 w-8 mb-2 opacity-40" />
+            <p className="text-xs">NFTs coming soon</p>
+          </div>
+        )}
+
+        {activeTab === "settings" && <Setting />}
+      </div>
+
+      {/* ═══ Bottom tab bar — fixed ═══ */}
+      <div className="pt-2 border-t border-zinc-800/40">
+        <div className="grid grid-cols-4">
+          {TAB_ITEMS.map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-center gap-1 py-2 transition-colors ${
+                activeTab === id
+                  ? "text-emerald-400"
+                  : "text-zinc-600 hover:text-zinc-400"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 
