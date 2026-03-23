@@ -1,73 +1,51 @@
+import { Button } from "../ui/button";
 import {
-  Button,
-  Card,
-  CardBody,
-  Avatar,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@nextui-org/react";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../ui/dialog";
 import { StoreContext } from "../../contexts";
-import { useEffect, useState, useContext } from "react";
-import * as fcl from "@onflow/fcl";
-import { RiGlobalLine } from "react-icons/ri";
-import { FaCircleCheck } from "react-icons/fa6";
-import { encode } from "@onflow/rlp";
+import { useContext } from "react";
 import { signOut } from "../../account";
 
 const SignOut = ({ isOpen, onOpen, onOpenChange }) => {
   const { store, setStore } = useContext(StoreContext);
-  const [authnInfo, setAuthnInfo] = useState(null);
 
   return (
-    <Modal
-      isOpen={isOpen}
-    //   placement="bottom"
-      onOpenChange={onOpenChange}
-      className="dark"
-    >
-      <ModalContent>
-        {(onClose) => (
-          <>
-            <ModalHeader className="flex flex-col gap-1">
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-1xl font-bold text-danger-300">
-                    Confirmation
-                  </h1>
-                </div>
-              </div>
-            </ModalHeader>
-            <ModalBody>
-              <h1 className="text-2xl font-bold text-gray-300">
-                Are you sure you want to sign out ?
-              </h1>
-            </ModalBody>
-            <ModalFooter>
-              <Button color="default" className="w-full h-12" onPress={onClose}>
-                Cancel
-              </Button>
-
-              <Button
-                color="danger"
-                variant="solid"
-                className="w-full h-12"
-                onPress={async () => {
-                  setStore({});
-                  signOut();
-                  onClose();
-                }}
-              >
-                Sign Out
-              </Button>
-            </ModalFooter>
-          </>
-        )}
-      </ModalContent>
-    </Modal>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="dark bg-zinc-900 border-zinc-800 sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-red-400">
+            Confirmation
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-2xl font-bold text-gray-300">
+          Are you sure you want to sign out ?
+        </p>
+        <DialogFooter className="flex gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            className="w-full h-12 border-zinc-700 hover:bg-zinc-800"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            className="w-full h-12"
+            onClick={() => {
+              setStore({});
+              signOut();
+              onOpenChange(false);
+            }}
+          >
+            Sign Out
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

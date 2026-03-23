@@ -1,10 +1,6 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  Chip,
-  Spinner,
-} from "@nextui-org/react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext, useRef, useCallback } from "react";
 import { getEvmChain } from "../../utils/evm";
@@ -173,19 +169,19 @@ const EVMPopup = () => {
           <title>Flow Dev Wallet - EVM</title>
         </Head>
         <main className={styles.main}>
-          <Card className="w-80">
-            <CardBody className="flex flex-col items-center gap-4 p-8">
+          <Card className="w-80 border-zinc-800 bg-zinc-900/90">
+            <CardContent className="flex flex-col items-center gap-4 p-8">
               <h2 className="text-xl font-bold">No Wallet Loaded</h2>
               <p className="text-gray-400 text-center text-sm">
                 Open the wallet main page first and import a key.
               </p>
               <Button
-                color="primary"
-                onPress={() => window.open(window.location.origin, "_blank")}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => window.open(window.location.origin, "_blank")}
               >
                 Open Wallet
               </Button>
-            </CardBody>
+            </CardContent>
           </Card>
         </main>
       </div>
@@ -200,11 +196,11 @@ const EVMPopup = () => {
       <main className={styles.main}>
         <div className="w-80 flex flex-col gap-4">
           {/* Connected status */}
-          <Card>
-            <CardBody className="flex flex-col gap-3 p-5">
+          <Card className="border-zinc-800 bg-zinc-900/90">
+            <CardContent className="flex flex-col gap-3 p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-200">EVM Wallet</h2>
-                <Chip color="success" size="sm" variant="flat">Connected</Chip>
+                <Badge variant="outline" className="border-emerald-600 text-emerald-500 bg-emerald-950/30">Connected</Badge>
               </div>
               <div className="bg-zinc-800 rounded-lg px-3 py-2">
                 <p className="text-xs text-gray-500 mb-1">Address</p>
@@ -213,19 +209,19 @@ const EVMPopup = () => {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Chip size="sm" variant="flat">{chain.name}</Chip>
-                <Chip size="sm" variant="flat">Chain {chain.chainId}</Chip>
+                <Badge variant="secondary" className="bg-zinc-800 text-gray-300">{chain.name}</Badge>
+                <Badge variant="secondary" className="bg-zinc-800 text-gray-300">Chain {chain.chainId}</Badge>
               </div>
               {store.autoSign && (
-                <Chip color="warning" size="sm" variant="flat">Auto-sign enabled</Chip>
+                <Badge variant="outline" className="w-fit border-yellow-600 text-yellow-500 bg-yellow-950/30">Auto-sign enabled</Badge>
               )}
-            </CardBody>
+            </CardContent>
           </Card>
 
           {/* Pending request approval */}
           {pendingRequest && !store.autoSign && (
-            <Card>
-              <CardBody className="flex flex-col gap-3 p-5">
+            <Card className="border-zinc-800 bg-zinc-900/90">
+              <CardContent className="flex flex-col gap-3 p-5">
                 <h3 className="text-sm font-bold text-gray-300">Signature Request</h3>
                 <div className="bg-zinc-800 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-500 mb-1">Method</p>
@@ -241,41 +237,39 @@ const EVMPopup = () => {
                 </div>
                 <div className="flex gap-3">
                   <Button
-                    color="default"
-                    className="flex-1 h-10"
-                    onPress={onReject}
+                    variant="outline"
+                    className="flex-1 h-10 border-zinc-700 hover:bg-zinc-800"
+                    onClick={onReject}
                   >
                     Reject
                   </Button>
                   <Button
-                    color="primary"
-                    variant="solid"
-                    className="flex-1 h-10"
-                    onPress={onApprove}
+                    className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={onApprove}
                   >
                     Approve
                   </Button>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           )}
 
           {/* Processing indicator */}
           {status === "processing" && (
-            <Card>
-              <CardBody className="flex flex-row items-center justify-center gap-3 p-4">
-                <Spinner size="sm" />
+            <Card className="border-zinc-800 bg-zinc-900/90">
+              <CardContent className="flex flex-row items-center justify-center gap-3 p-4">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
                 <span className="text-sm text-gray-400">Processing request...</span>
-              </CardBody>
+              </CardContent>
             </Card>
           )}
 
           {/* Idle state */}
           {!pendingRequest && status === "idle" && (
-            <Card>
-              <CardBody className="flex flex-col items-center gap-2 p-4">
+            <Card className="border-zinc-800 bg-zinc-900/90">
+              <CardContent className="flex flex-col items-center gap-2 p-4">
                 <p className="text-sm text-gray-500">Waiting for dApp requests...</p>
-              </CardBody>
+              </CardContent>
             </Card>
           )}
         </div>

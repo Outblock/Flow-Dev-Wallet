@@ -1,6 +1,8 @@
-import { Textarea, Input, Button } from "@nextui-org/react";
-import { StoreContext } from "../../contexts";
-import { useEffect, useState, useContext } from "react";
+import { Textarea } from "../../components/ui/textarea";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
+import { useState } from "react";
 import { IoMdEye } from "react-icons/io";
 import { IoMdEyeOff } from "react-icons/io";
 import { findAddressWithPK } from "../../utils/findAddressWithPK";
@@ -32,9 +34,6 @@ const JsonImport = ({onOpen, onImport}) => {
       const keystore = e.target[0].value
       const password = e.target[1].value
       const address = e.target[3].value
-      // Parse the JSON keystore and extract the private key hex directly.
-      // Full keystore decryption (V3) is not supported without wallet-core.
-      // Expect the JSON to contain a "privateKey" field as hex.
       const parsed = JSON.parse(keystore);
       const pkHex = parsed.privateKey || parsed.private_key;
       if (!pkHex) {
@@ -54,13 +53,14 @@ const JsonImport = ({onOpen, onImport}) => {
   };
 
   const checkJSONImport = (event) => {
-    setJson(event);
-    if (event.length === 0) {
+    const value = event.target.value;
+    setJson(value);
+    if (value.length === 0) {
       setIsInvalid(false);
       setErrorMessage("");
       return false;
     }
-    const result = hasJsonStructure(event);
+    const result = hasJsonStructure(value);
     setIsInvalid(!result);
     setErrorMessage(!result ? "Not a valid json input" : "");
     return result;
@@ -72,50 +72,59 @@ const JsonImport = ({onOpen, onImport}) => {
       onSubmit={handleImport}
       className="w-full flex flex-col gap-3 items-start justify-start"
     >
-      <Textarea
-        isInvalid={isInvalid}
-        value={json}
-        onValueChange={checkJSONImport}
-        minRows={18}
-        fullWidth
-        isRequired
-        label="JSON"
-        placeholder="You can import the json file from other wallet (eg. Blocto)"
-        className="grow"
-        errorMessage={errorMesssage}
-      />
-      <Input
-        isRequired
-        label="Password"
-        placeholder="Enter password for json file"
-        endContent={
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="json-input">JSON</Label>
+        <Textarea
+          id="json-input"
+          value={json}
+          onChange={checkJSONImport}
+          rows={8}
+          required
+          placeholder="You can import the json file from other wallet (eg. Blocto)"
+          className={`grow font-mono ${isInvalid ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+        />
+        {isInvalid && errorMesssage && (
+          <p className="text-xs text-red-500">{errorMesssage}</p>
+        )}
+      </div>
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="json-password">Password</Label>
+        <div className="relative">
+          <Input
+            id="json-password"
+            required
+            placeholder="Enter password for json file"
+            type={isVisible ? "text" : "password"}
+            className="pr-10"
+          />
           <button
-            className="focus:outline-none"
+            className="absolute right-3 top-1/2 -translate-y-1/2 focus:outline-none"
             type="button"
             onClick={toggleVisibility}
           >
             {isVisible ? (
-              <IoMdEyeOff className="text-2xl text-default-400 pointer-events-none" />
+              <IoMdEyeOff className="text-xl text-muted-foreground" />
             ) : (
-              <IoMdEye className="text-2xl text-default-400 pointer-events-none" />
+              <IoMdEye className="text-xl text-muted-foreground" />
             )}
           </button>
-        }
-        type={isVisible ? "text" : "password"}
-      />
-     <Input
-        label="Address"
-        placeholder="Enter your flow address (Optional)"
-        type="text"
-      />
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="json-address">Address</Label>
+        <Input
+          id="json-address"
+          placeholder="Enter your flow address (Optional)"
+          type="text"
+        />
+      </div>
       <Button
-        isLoading={isLoading}
+        disabled={isLoading}
         form="keystore"
         className="w-full"
         type="submit"
-        color="primary"
       >
-        Import
+        {isLoading ? "Importing..." : "Import"}
       </Button>
     </form>
   );

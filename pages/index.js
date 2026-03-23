@@ -6,7 +6,7 @@ import SignCard from "../components/sign/SignCard";
 import WalletCard from "../components/WalletCard";
 import Connect from "../components/Connect";
 import { StoreContext } from '../contexts'
-import { CircularProgress, Button } from "@nextui-org/react";
+import { Button } from "../components/ui/button";
 import ErrorCard from "../components/error";
 import { login } from "../account";
 
@@ -29,7 +29,11 @@ export default function Home() {
 
   const render = () => {
     if (isLoading) {
-      return <CircularProgress aria-label="Loading..." />
+      return (
+        <div className="flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-[#00EF8B]" />
+        </div>
+      )
     }
 
     // Show creating progress only if we have a valid txId
@@ -42,7 +46,7 @@ export default function Home() {
       return (
         <div className="flex flex-col gap-3 w-full items-center">
           <p className="text-gray-500 text-sm">Account creation incomplete.</p>
-          <Button color="primary" variant="solid" onPress={resetCreating}>
+          <Button className="bg-[#00EF8B] text-black hover:bg-[#00d67d] font-semibold" onClick={resetCreating}>
             Start Over
           </Button>
         </div>

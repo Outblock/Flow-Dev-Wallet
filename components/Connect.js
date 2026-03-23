@@ -1,15 +1,12 @@
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
 import {
-  Button,
-  Card,
-  CardBody,
-  Avatar,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@nextui-org/react";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
 import { StoreContext } from "../contexts";
 import { useEffect, useState, useContext } from "react";
 import * as fcl from "@onflow/fcl";
@@ -21,14 +18,14 @@ import { signWithKey } from "../utils/sign";
 const Connect = ({ address }) => {
   const { store, setStore } = useContext(StoreContext);
   const [authnInfo, setAuthnInfo] = useState(null);
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const callback = (msg) => {
       console.log("msg ==>", msg, store.address);
       setAuthnInfo(msg);
       if (store.address) {
-        onOpen();
+        setOpen(true);
       }
     };
     try {
@@ -147,88 +144,81 @@ const Connect = ({ address }) => {
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      placement="bottom"
-      onOpenChange={onOpenChange}
-      className="dark"
-    >
-      <ModalContent>
-        {(onClose) => (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="dark bg-zinc-900 border-zinc-800 sm:max-w-md">
+        {authnInfo && (
           <>
-            <ModalHeader className="flex flex-col gap-1">
+            <DialogHeader>
               <div className="flex items-center gap-4">
-                <Avatar size="lg" src={authnInfo.config.app.icon} />
+                <img
+                  src={authnInfo.config.app.icon}
+                  alt=""
+                  className="h-12 w-12 rounded-full bg-zinc-800"
+                />
                 <div className="flex flex-col gap-1">
-                  <h1 className="text-1xl font-bold text-gray-500">
+                  <DialogTitle className="text-base font-bold text-gray-500">
                     Connecting to
-                  </h1>
-                  <h1 className="text-2xl font-bold text-gray-300">
+                  </DialogTitle>
+                  <p className="text-2xl font-bold text-gray-300">
                     {authnInfo.config.app.title}
-                  </h1>
+                  </p>
                 </div>
               </div>
-            </ModalHeader>
-            <ModalBody>
-                <div className="flex flex-col gap-4">
-              <Card >
-                <CardBody>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <Card className="border-zinc-800 bg-zinc-800/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <RiGlobalLine className="text-lg text-blue-100" />
+                    <span className="text-lg font-normal text-blue-100">
+                      {authnInfo.config.client.hostname}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-zinc-800 bg-zinc-800/50">
+                <CardContent className="p-3">
+                  <p className="text-base font-normal text-gray-500 uppercase mb-3">
+                    This App would like to
+                  </p>
+                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
-                        <RiGlobalLine className="text-lg text-blue-100" />
-                        <h1 className="text-lg font-normal text-blue-100">
-                        {authnInfo.config.client.hostname}
-                        </h1>
+                      <FaCircleCheck className="text-emerald-500" />
+                      <p>View your wallet balance and activity</p>
                     </div>
-                </CardBody>
-              </Card>
-              <Card >
-                <CardBody>
-                    <h1 className="text-base font-normal text-gray-500 uppercase mb-3">
-                        This App would like to
-                    </h1>
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                            <FaCircleCheck className="text-success-500 text-normal"/>
-                            <p>View your wallet balance and activity</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <FaCircleCheck className="text-success-500 text-normal"/>
-                            <p>Request approval for transactions</p>
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <FaCircleCheck className="text-emerald-500" />
+                      <p>Request approval for transactions</p>
                     </div>
-                </CardBody>
+                  </div>
+                </CardContent>
               </Card>
-              </div>
-
-            </ModalBody>
-            <ModalFooter>
+            </div>
+            <DialogFooter className="flex gap-2 sm:gap-2">
               <Button
-                color="default"
-                className="w-full h-12"
-                onPress={() => {
-                  onClose();
+                variant="outline"
+                className="w-full h-12 border-zinc-700 hover:bg-zinc-800"
+                onClick={() => {
+                  setOpen(false);
                   onReject();
                 }}
               >
                 Cancel
               </Button>
-
               <Button
-                color="primary"
-                variant="solid"
-                className="w-full h-12"
-                onPress={async () => {
-                  onClose();
+                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={async () => {
+                  setOpen(false);
                   await onApproval();
                 }}
               >
                 Connect
               </Button>
-            </ModalFooter>
+            </DialogFooter>
           </>
         )}
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 };
 

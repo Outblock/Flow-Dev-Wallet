@@ -1,14 +1,5 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  Avatar,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@nextui-org/react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
 import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext, useRef } from "react";
 import * as fcl from "@onflow/fcl";
@@ -145,19 +136,19 @@ const Authn = () => {
       <div className={styles.container}>
         <Head><title>Flow Dev Wallet - Connect</title></Head>
         <main className={styles.main}>
-          <Card className="w-96">
-            <CardBody className="flex flex-col items-center gap-4 p-8">
+          <Card className="w-96 border-zinc-800 bg-zinc-900/90">
+            <CardContent className="flex flex-col items-center gap-4 p-8">
               <h2 className="text-xl font-bold">No Account Loaded</h2>
               <p className="text-gray-400 text-center text-sm">
                 Open the wallet main page first and import a key or register with passkey.
               </p>
               <Button
-                color="primary"
-                onPress={() => window.open(window.location.origin, "_blank")}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => window.open(window.location.origin, "_blank")}
               >
                 Open Wallet
               </Button>
-            </CardBody>
+            </CardContent>
           </Card>
         </main>
       </div>
@@ -168,12 +159,16 @@ const Authn = () => {
     <div className={styles.container}>
       <Head><title>Flow Dev Wallet - Connect</title></Head>
       <main className={styles.main}>
-        <Card className="w-96">
-          <CardBody className="flex flex-col gap-4 p-6">
+        <Card className="w-96 border-zinc-800 bg-zinc-900/90">
+          <CardContent className="flex flex-col gap-4 p-6">
             {authnInfo && (
               <>
                 <div className="flex items-center gap-4">
-                  <Avatar size="lg" src={authnInfo.config?.app?.icon} />
+                  <img
+                    src={authnInfo.config?.app?.icon}
+                    alt=""
+                    className="h-12 w-12 rounded-full bg-zinc-800"
+                  />
                   <div className="flex flex-col gap-1">
                     <h1 className="text-sm font-bold text-gray-500">Connecting to</h1>
                     <h1 className="text-xl font-bold text-gray-300">
@@ -182,31 +177,31 @@ const Authn = () => {
                   </div>
                 </div>
 
-                <Card>
-                  <CardBody>
+                <Card className="border-zinc-800 bg-zinc-800/50">
+                  <CardContent className="p-3">
                     <div className="flex items-center gap-2">
                       <RiGlobalLine className="text-lg text-blue-100" />
                       <span className="text-sm text-blue-100">
                         {authnInfo.config?.client?.hostname || "localhost"}
                       </span>
                     </div>
-                  </CardBody>
+                  </CardContent>
                 </Card>
 
-                <Card>
-                  <CardBody>
+                <Card className="border-zinc-800 bg-zinc-800/50">
+                  <CardContent className="p-3">
                     <p className="text-xs text-gray-500 uppercase mb-2">This App would like to</p>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <FaCircleCheck className="text-success-500" />
+                        <FaCircleCheck className="text-emerald-500" />
                         <p className="text-sm">View your wallet balance and activity</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <FaCircleCheck className="text-success-500" />
+                        <FaCircleCheck className="text-emerald-500" />
                         <p className="text-sm">Request approval for transactions</p>
                       </div>
                     </div>
-                  </CardBody>
+                  </CardContent>
                 </Card>
 
                 <div className="flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-2">
@@ -216,17 +211,15 @@ const Authn = () => {
 
                 <div className="flex gap-3">
                   <Button
-                    color="default"
-                    className="flex-1 h-12"
-                    onPress={onReject}
+                    variant="outline"
+                    className="flex-1 h-12 border-zinc-700 hover:bg-zinc-800"
+                    onClick={onReject}
                   >
                     Cancel
                   </Button>
                   <Button
-                    color="primary"
-                    variant="solid"
-                    className="flex-1 h-12"
-                    onPress={onApproval}
+                    className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={onApproval}
                   >
                     Connect
                   </Button>
@@ -239,7 +232,7 @@ const Authn = () => {
                 <p className="text-gray-400 text-sm">Waiting for dApp connection...</p>
               </div>
             )}
-          </CardBody>
+          </CardContent>
         </Card>
       </main>
     </div>

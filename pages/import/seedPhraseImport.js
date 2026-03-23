@@ -1,5 +1,8 @@
-import { Textarea, Input, Button } from "@nextui-org/react";
-import { useEffect, useState, useContext } from "react";
+import { Textarea } from "../../components/ui/textarea";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
+import { useState } from "react";
 import { findAddressWithSeed } from "../../utils/findAddressWithPK";
 import { KEY_TYPE } from "../../utils/constants";
 
@@ -26,23 +29,27 @@ const SeedPhraseImport = ({ onOpen, onImport }) => {
 
   return (
     <form id="seed" onSubmit={handleImport} className="w-full flex flex-col gap-3 items-start justify-start">
-    <Textarea
-      minRows={18}
-      // value="edge dumb split music shell spray proof elbow vault thank swallow final"
-     fullWidth
-     isRequired
-      label="Seed Phrase"
-      placeholder="Import 12 or 24 words split with whitespace"
-      className="grow"
-    />
-    {/* <Input isRequired type="password" label="Password" placeholder="Enter password for json file"/> */}
-    <Input
-        label="Address"
-        // value="0x8b8eadda2370412b"
-        placeholder="Enter your flow address (Optional)"
-        type="text"
-      />
-    <Button isLoading={isLoading} type="submit" form="seed" className="w-full font-bold" color="primary"> Import </Button>
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="seed-phrase">Seed Phrase</Label>
+        <Textarea
+          id="seed-phrase"
+          rows={8}
+          required
+          placeholder="Import 12 or 24 words split with whitespace"
+          className="grow font-mono"
+        />
+      </div>
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="seed-address">Address</Label>
+        <Input
+          id="seed-address"
+          placeholder="Enter your flow address (Optional)"
+          type="text"
+        />
+      </div>
+      <Button disabled={isLoading} type="submit" form="seed" className="w-full font-bold">
+        {isLoading ? "Importing..." : "Import"}
+      </Button>
     </form>
   );
 };

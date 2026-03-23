@@ -1,6 +1,8 @@
-import { Textarea, Input, Button } from "@nextui-org/react";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
 import { StoreContext } from "../../contexts";
-import { useEffect, useState, useContext } from "react";
+import { useState, useContext } from "react";
 import { findAddressWithKey } from "../../utils/findAddressWithPubKey";
 import { pk2PubKey } from "../../utils/findAddressWithPK";
 import { KEY_TYPE } from "../../utils/constants";
@@ -35,27 +37,31 @@ const PrivateKeyImport = ({ onOpen, onImport }) => {
       onSubmit={handleImport}
       className="w-full flex flex-col gap-3 items-start justify-start"
     >
-      <Input
-        isRequired
-        // value="0x8822c99458cea9de3ba4e1d608680a8c58265ee83d99bb6e3b450a6d4c464662"
-        type="text"
-        label="Private Key"
-        placeholder="Enter your private key"
-      />
-      <Input
-        // value="0xc2389ed351926764"
-        label="Address"
-        placeholder="Enter your flow address (Optional)"
-        type="text"
-      />
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="private-key">Private Key</Label>
+        <Input
+          id="private-key"
+          required
+          type="text"
+          placeholder="Enter your private key"
+          className="font-mono"
+        />
+      </div>
+      <div className="flex flex-col gap-2 w-full">
+        <Label htmlFor="pk-address">Address</Label>
+        <Input
+          id="pk-address"
+          placeholder="Enter your flow address (Optional)"
+          type="text"
+        />
+      </div>
       <Button
         form="privateKey"
         type="submit"
-        isLoading={isLoading}
+        disabled={isLoading}
         className="w-full font-bold"
-        color="primary"
       >
-        Import
+        {isLoading ? "Importing..." : "Import"}
       </Button>
     </form>
   );

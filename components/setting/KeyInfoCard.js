@@ -1,6 +1,7 @@
 import { FaHashtag } from "react-icons/fa6";
 import { TbMathMax } from "react-icons/tb";
-import { Snippet, Card, CardBody, Code, Chip } from "@nextui-org/react";
+import { Card, CardContent } from "../ui/card";
+import { Badge } from "../ui/badge";
 import { useContext, useEffect, useState } from "react";
 import { StoreContext } from "../../contexts";
 import { FLOW_BIP44_PATH, KEY_TYPE } from "../../utils/constants";
@@ -19,78 +20,75 @@ const KeyInfoCard = () => {
   }, []);
 
   return (
-    <Card>
+    <Card className="border-zinc-800 bg-zinc-800/50">
       {keyInfo && (
-        <CardBody className="flex flex-col space-y-4 p-6">
-          {/* <div className="flex items-center gap-4">
-          <FaArrowDownWideShort className="text-2xl" />
-          <h1 className="text-2xl font-bold text-gray-300"> Result </h1>
-        </div>
-        <Divider /> */}
-
+        <CardContent className="flex flex-col space-y-4 p-6">
           <div className="grid grid-cols-4 gap-4 overflow-auto">
-            {/* {store.address && <h6> Address </h6>}
-          {store.address && (
-            <div className="col-span-3">
-              <Code className="whitespace-normal">{store.address}</Code>
-            </div>
-          )} */}
-
             {keyInfo.mnemonic && <h6> Mnemonic </h6>}
             {keyInfo.mnemonic && (
               <div className="col-span-3">
-                <Code className="whitespace-normal">{keyInfo.mnemonic}</Code>
+                <code className="text-sm bg-black/50 px-2 py-1 rounded whitespace-normal text-gray-300">{keyInfo.mnemonic}</code>
               </div>
             )}
 
             {keyInfo.mnemonic && <h6> BIP44 Path </h6>}
             {keyInfo.mnemonic && (
               <div className="col-span-3">
-                <Code className="whitespace-normal w-full">
+                <code className="text-sm bg-black/50 px-2 py-1 rounded whitespace-normal w-full text-gray-300">
                   {FLOW_BIP44_PATH}
-                </Code>
+                </code>
               </div>
             )}
 
             {keyInfo.pk && <h6> Private Key </h6>}
             {keyInfo.pk && (
               <div className="col-span-3 place-self-auto h-auto min-h-fit">
-                <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.pk}</Snippet>
+                <div className="w-full break-all bg-black/50 rounded px-2 py-1">
+                  <code className="text-sm text-gray-300 break-all whitespace-break-spaces">{keyInfo.pk}</code>
+                </div>
               </div>
             )}
 
             {keyInfo.credentialId && <h6> Credential ID </h6>}
             {keyInfo.credentialId && (
               <div className="col-span-3">
-                <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.credentialId}</Snippet>
+                <div className="w-full break-all bg-black/50 rounded px-2 py-1">
+                  <code className="text-sm text-gray-300 break-all whitespace-break-spaces">{keyInfo.credentialId}</code>
+                </div>
               </div>
             )}
 
             {keyInfo.pubK && <h6> Public Key </h6>}
             {keyInfo.pubK && (
               <div className="col-span-3 ">
-                <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.pubK}</Snippet>
+                <div className="w-full break-all bg-black/50 rounded px-2 py-1">
+                  <code className="text-sm text-gray-300 break-all whitespace-break-spaces">{keyInfo.pubK}</code>
+                </div>
               </div>
             )}
 
             <h6> Key Index </h6>
             <div className="col-span-3 ">
-              <Snippet symbol="" className="whitespace-normal w-full">{keyInfo.keyIndex}</Snippet>
+              <div className="w-full bg-black/50 rounded px-2 py-1">
+                <code className="text-sm text-gray-300">{keyInfo.keyIndex}</code>
+              </div>
             </div>
 
             <div className="col-span-4 justify-self-end">
               <div className="flex justify-self-end gap-4">
-                <Chip startContent={<TbMathMax />}  variant="faded">
+                <Badge variant="outline" className="border-zinc-700 text-gray-300 gap-1">
+                  <TbMathMax className="h-3 w-3" />
                   {keyInfo.signAlgo}
-                </Chip>
+                </Badge>
 
-                <Chip startContent={<FaHashtag />} variant="faded">
-                {keyInfo.hashAlgo}
-                </Chip>
+                <Badge variant="outline" className="border-zinc-700 text-gray-300 gap-1">
+                  <FaHashtag className="h-3 w-3" />
+                  {keyInfo.hashAlgo}
+                </Badge>
               </div>
             </div>
           </div>
-        </CardBody>
+        </CardContent>
       )}
     </Card>
   );

@@ -1,8 +1,3 @@
-import {
-  Listbox,
-  ListboxItem,
-  Spinner,
-} from "@nextui-org/react";
 import { useEvmTokens } from "../../hooks/useTokens";
 import TokenItem from "./TokenItem";
 
@@ -14,7 +9,11 @@ const EvmTokenList = ({ evmAddress }) => {
   }
 
   if (loading) {
-    return <Spinner size="sm" />;
+    return (
+      <div className="flex items-center justify-center py-4">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+      </div>
+    );
   }
 
   if (error) {
@@ -28,9 +27,13 @@ const EvmTokenList = ({ evmAddress }) => {
   }
 
   return (
-    <Listbox aria-label="EVM Token list" variant="flat">
+    <div role="listbox" aria-label="EVM Token list" className="flex flex-col">
       {tokenList.map((token, i) => (
-        <ListboxItem key={token.symbol || i}>
+        <div
+          key={token.symbol || i}
+          role="option"
+          className="px-3 py-1 rounded-md hover:bg-accent transition-colors cursor-default"
+        >
           <TokenItem
             tokenInfo={{
               name: token.name || token.symbol,
@@ -39,9 +42,9 @@ const EvmTokenList = ({ evmAddress }) => {
               balance: token.balance,
             }}
           />
-        </ListboxItem>
+        </div>
       ))}
-    </Listbox>
+    </div>
   );
 };
 

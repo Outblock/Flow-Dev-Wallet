@@ -1,85 +1,76 @@
+import { Button } from "../../components/ui/button";
 import {
-    Button,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Select,
-    SelectItem,
-  } from "@nextui-org/react";
-  
-  const ImportAddressModal = ({ isOpen, onOpen, onOpenChange, accounts, handleAddressSelection }) => {
-    console.log("accounts ==>", accounts)
-    const test = (e) => {
-      e.preventDefault();
-      handleAddressSelection(e.target[0].value)
-    }
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../../components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "../../components/ui/select";
+import { useState } from "react";
 
-    return (
-      <Modal
-        isOpen={isOpen}
-        // placement="bottom"
-        onOpenChange={onOpenChange}
-        className="dark"
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col gap-1">
-                    <h1 className="text-1xl font-bold text-success-300">
-                      Account Found on Chain
-                    </h1>
-                  </div>
-                </div>
-              </ModalHeader>
-              <ModalBody>
-                <h1 className="text-1xl font-semibold text-gray-300">
-                    Choose an account you want to import
-                </h1>
+const ImportAddressModal = ({ isOpen, onOpen, onOpenChange, accounts, handleAddressSelection }) => {
+  console.log("accounts ==>", accounts)
+  const [selectedAddress, setSelectedAddress] = useState("");
 
-              <form id="address" onSubmit={test}>
-                <Select
-                  isRequired
-                    // label="Flow account"
-                    aria-label="Select Flow Address"
-                    placeholder="Select Flow Address"
-                    // selectedKeys={value}
-                    defaultSelectedKeys={[accounts[0].address]}
-                    className="w-full dark"
-                    // onSelectionChange={setValue}
-                >
-                    {accounts.map((account) => (
-                    <SelectItem className="dark bg-dark" aria-label={account.address} key={account.address} value={account.address}>
-                        {account.address}
-                    </SelectItem>
-                    ))}
-                </Select>
-                </form>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" className="w-full h-12" onPress={onClose}>
-                    Cancel
-                </Button>
-  
-                <Button
-                  form="address"
-                  color="primary"
-                  variant="solid"
-                  className="w-full h-12"
-                  type="submit"
-                >
-                    Import
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-    );
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleAddressSelection(selectedAddress || (accounts && accounts[0]?.address));
   };
-  
-  export default ImportAddressModal;
-  
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-green-400">
+            Account Found on Chain
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm font-semibold text-gray-300">
+          Choose an account you want to import
+        </p>
+        <form id="address" onSubmit={handleSubmit}>
+          <Select
+            value={selectedAddress || (accounts && accounts[0]?.address) || ""}
+            onValueChange={setSelectedAddress}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Flow Address" />
+            </SelectTrigger>
+            <SelectContent>
+              {accounts && accounts.map((account) => (
+                <SelectItem key={account.address} value={account.address}>
+                  {account.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </form>
+        <DialogFooter className="flex gap-2">
+          <Button
+            variant="secondary"
+            className="w-full h-12"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            form="address"
+            type="submit"
+            className="w-full h-12"
+          >
+            Import
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ImportAddressModal;

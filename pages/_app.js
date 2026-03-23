@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import "../styles/globals.css";
-import { NextUIProvider } from "@nextui-org/react";
 import { StoreContext } from "../contexts";
 import fclConfig, { getDefaultRpc } from "../utils/config";
 import { load, login } from "../account";
@@ -133,7 +132,7 @@ function MyApp({ Component, pageProps }) {
   }, []);
 
   return (
-    <NextUIProvider>
+    <>
       <Toaster
       position="top-center"
       toastOptions={{
@@ -147,7 +146,7 @@ function MyApp({ Component, pageProps }) {
           <Component {...pageProps} />
         </main>
       </StoreContext.Provider>
-    </NextUIProvider>
+    </>
   );
 }
 

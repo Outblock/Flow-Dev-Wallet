@@ -1,13 +1,7 @@
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Tabs,
-  Tab,
-  useDisclosure,
-} from "@nextui-org/react";
+import { Card, CardContent } from "../../components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
 import { StoreContext } from "../../contexts";
-import { useEffect, useState, useContext } from "react";
+import { useState, useContext } from "react";
 import styles from "../../styles/Home.module.css";
 import { FaKey } from "react-icons/fa6";
 import { KEY_TAB } from "../../utils/keyTab";
@@ -22,17 +16,17 @@ import { login, set } from "../../account";
 
 const Import = () => {
   const { store, setStore } = useContext(StoreContext);
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const {
-    isOpen: isImport,
-    onOpen: onImport,
-    onOpenChange: onImportChange,
-  } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isImport, setIsImport] = useState(false);
   const [importData, setImportData] = useState(null);
+
+  const onOpen = () => setIsOpen(true);
+  const onOpenChange = (open) => setIsOpen(open);
+  const onImport = () => setIsImport(true);
+  const onImportChange = (open) => setIsImport(open);
 
   const handleImport = (accounts) => {
     onImport();
-
     setImportData(accounts);
   };
 
@@ -74,7 +68,7 @@ const Import = () => {
                 Import using seed phrase, private key, or JSON keystore
               </h1>
             </div>
-            <CardBody
+            <CardContent
               className="w-full !h-auto !transition-all"
               style={{ transition: "all .3s ease-in-out" }}
             >
@@ -92,52 +86,35 @@ const Import = () => {
                 importData={importData}
               />
               <div className="flex w-full flex-col">
-                <Tabs
-                  aria-label="Options"
-                  color="warning"
-                  variant="solid"
-                  fullWidth
-                  items={KEY_TAB}
-                >
-                  {(item) => (
-                    <Tab
-                      key={item.id}
-                      title={
+                <Tabs defaultValue="seed" className="w-full">
+                  <TabsList className="w-full">
+                    {KEY_TAB.map((item) => (
+                      <TabsTrigger key={item.id} value={item.id} className="flex-1">
                         <div className="flex items-center space-x-2">
                           {item.icon}
                           <span>{item.name}</span>
                         </div>
-                      }
-                    >
-                      {(() => {
-                        switch (item.id) {
-                          case "seed":
-                            return (
-                              <SeedPhraseImport
-                                onOpen={onOpen}
-                                onImport={handleImport}
-                              />
-                            );
-                          case "key":
-                            return (
-                              <PrivateKeyImport
-                                onOpen={onOpen}
-                                onImport={handleImport}
-                              />
-                            );
-                          case "json":
-                            return (
-                              <JsonImport onOpen={onOpen} onImport={handleImport} />
-                            );
-                          default:
-                            return <p>Not available</p>;
-                        }
-                      })()}
-                    </Tab>
-                  )}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  <TabsContent value="seed">
+                    <SeedPhraseImport
+                      onOpen={onOpen}
+                      onImport={handleImport}
+                    />
+                  </TabsContent>
+                  <TabsContent value="key">
+                    <PrivateKeyImport
+                      onOpen={onOpen}
+                      onImport={handleImport}
+                    />
+                  </TabsContent>
+                  <TabsContent value="json">
+                    <JsonImport onOpen={onOpen} onImport={handleImport} />
+                  </TabsContent>
                 </Tabs>
               </div>
-            </CardBody>
+            </CardContent>
           </Card>
         </div>
       </main>

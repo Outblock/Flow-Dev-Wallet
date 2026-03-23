@@ -1,4 +1,5 @@
-import { Card, CardBody, Switch } from "@nextui-org/react";
+import { Card, CardContent } from "../ui/card";
+import { Switch } from "../ui/switch";
 import { useContext, useEffect, useState } from "react";
 import { StoreContext } from "../../contexts";
 import { KEY_TYPE } from "../../utils/constants";
@@ -38,8 +39,8 @@ const Setting = () => {
 
   return (
     <div className="flex flex-col gap-3">
-      <Card>
-        <CardBody>
+      <Card className="border-zinc-800 bg-zinc-900/90">
+        <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <IoFingerPrintOutline className="text-2xl text-gray-300" />
             <div className="flex flex-col grow">
@@ -53,23 +54,23 @@ const Setting = () => {
               )}
             </div>
             <Switch
-              isDisabled={store.id == null}
-              isSelected={enableBiometric}
-              onValueChange={async () => {
-                console.log("onValueChange ==>", enableBiometric);
-                setEnableBiometric(!enableBiometric);
-                set(KEYS.BIOMETRIC, !enableBiometric);
-                handleKeyInfo(!enableBiometric);
+              disabled={store.id == null}
+              checked={enableBiometric}
+              onCheckedChange={(checked) => {
+                console.log("onCheckedChange ==>", enableBiometric);
+                setEnableBiometric(checked);
+                set(KEYS.BIOMETRIC, checked);
+                handleKeyInfo(checked);
               }}
             />
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
-      <Card>
-        <CardBody className="gap-2 transition-transform">
+      <Card className="border-zinc-800 bg-zinc-900/90">
+        <CardContent className="p-4 gap-2 transition-transform">
           <div
-            className="flex items-center gap-4"
+            className="flex items-center gap-4 cursor-pointer"
             onClick={() => setExpanded((s) => !isExpanded)}
           >
             <IoKeyOutline className="text-2xl text-gray-300" />
@@ -87,7 +88,7 @@ const Setting = () => {
           </div>
 
           {isExpanded && <KeyInfoCard className="!transition-transform" />}
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

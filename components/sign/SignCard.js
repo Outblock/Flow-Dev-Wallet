@@ -1,12 +1,8 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  Divider,
-  Input,
-  Chip,
-  Image,
-} from "@nextui-org/react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Separator } from "../../components/ui/separator";
+import { Input } from "../../components/ui/input";
+import { Badge } from "../../components/ui/badge";
 import { StoreContext } from "../../contexts";
 import {
   createPasskey,
@@ -107,30 +103,31 @@ const SignCard = () => {
 
   // Header
   const Header = ({ subtitle }) => (
-    <Card className="w-full">
-      <CardBody className="flex flex-row items-center gap-4 p-4">
-        <Image width={40} src="./logo.svg" alt="logo" />
+    <Card className="w-full border-zinc-800">
+      <CardContent className="flex flex-row items-center gap-4 p-4">
+        <img width={40} src="./logo.svg" alt="logo" />
         <div className="flex flex-col grow">
           <h1 className="text-xl font-bold text-gray-200">Flow Dev Wallet</h1>
           <p className="text-xs text-gray-500">{subtitle || "Welcome"}</p>
         </div>
         <div className="flex items-center gap-2">
           {store.network && (
-            <Chip size="sm" variant="flat" color={store.network === "mainnet" ? "primary" : store.network === "emulator" ? "secondary" : "success"} className="uppercase text-[10px]">
+            <Badge variant="secondary" className={`uppercase text-[10px] font-mono ${store.network === "mainnet" ? "bg-emerald-900/50 text-emerald-400 border-emerald-800" : store.network === "emulator" ? "bg-violet-900/50 text-violet-400 border-violet-800" : "bg-green-900/50 text-green-400 border-green-800"}`}>
               {store.network}
-            </Chip>
+            </Badge>
           )}
-          {store.autoSign && <Chip size="sm" variant="flat" color="warning" className="text-[10px]">auto</Chip>}
-          <Button isIconOnly variant="light" size="sm" onPress={() => Router.push("/settings")}>
+          {store.autoSign && <Badge variant="secondary" className="text-[10px] bg-amber-900/50 text-amber-400 border-amber-800">auto</Badge>}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => Router.push("/settings")}>
             <IoSettingsOutline className="text-lg text-gray-500" />
           </Button>
         </div>
-      </CardBody>
+      </CardContent>
     </Card>
   );
 
-  const BackButton = ({ onPress }) => (
-    <Button size="sm" variant="light" onPress={onPress || (() => { setMode(null); setCreateType(null); })} className="self-start -ml-1 text-gray-500" startContent={<IoArrowBackOutline />}>
+  const BackButton = ({ onClick }) => (
+    <Button size="sm" variant="ghost" onClick={onClick || (() => { setMode(null); setCreateType(null); })} className="self-start -ml-1 text-gray-500">
+      <IoArrowBackOutline className="mr-1" />
       Back
     </Button>
   );
@@ -140,12 +137,12 @@ const SignCard = () => {
     return (
       <div className="flex flex-col gap-3 w-full">
         <Header subtitle="Get started" />
-        <Card className="w-full">
-          <CardBody className="flex flex-col gap-2 p-3">
+        <Card className="w-full border-zinc-800">
+          <CardContent className="flex flex-col gap-2 p-3">
             <Button
               className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-4 px-4 justify-start"
-              variant="light"
-              onPress={() => setMode("create")}
+              variant="ghost"
+              onClick={() => setMode("create")}
             >
               <div className="flex items-center gap-3 w-full">
                 <div className="w-8 flex justify-center shrink-0">
@@ -160,8 +157,8 @@ const SignCard = () => {
 
             <Button
               className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-4 px-4 justify-start"
-              variant="light"
-              onPress={() => Router.push("/import")}
+              variant="ghost"
+              onClick={() => Router.push("/import")}
             >
               <div className="flex items-center gap-3 w-full">
                 <div className="w-8 flex justify-center shrink-0">
@@ -174,12 +171,12 @@ const SignCard = () => {
               </div>
             </Button>
 
-            <Divider className="my-1" />
+            <Separator className="my-1" />
 
             <Button
               className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-3 px-4 justify-start"
-              variant="light"
-              onPress={async () => {
+              variant="ghost"
+              onClick={async () => {
                 try {
                   const result = await getPasskey(store.id || "");
                   setLoginInfo(result);
@@ -198,7 +195,7 @@ const SignCard = () => {
                 </div>
               </div>
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
     );
@@ -242,14 +239,14 @@ const SignCard = () => {
     return (
       <div className="flex flex-col gap-3 w-full">
         <Header subtitle="Create new wallet" />
-        <Card className="w-full">
-          <CardBody className="flex flex-col gap-2 p-3">
+        <Card className="w-full border-zinc-800">
+          <CardContent className="flex flex-col gap-2 p-3">
             <BackButton />
 
             <Button
               className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-4 px-4 justify-start"
-              variant="light"
-              onPress={() => setCreateType("passkey")}
+              variant="ghost"
+              onClick={() => setCreateType("passkey")}
             >
               <div className="flex items-center gap-3 w-full">
                 <div className="w-8 flex justify-center shrink-0">
@@ -264,9 +261,9 @@ const SignCard = () => {
 
             <Button
               className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-4 px-4 justify-start"
-              variant="light"
-              onPress={handleCreateWithSeed}
-              isDisabled={loading}
+              variant="ghost"
+              onClick={handleCreateWithSeed}
+              disabled={loading}
             >
               <div className="flex items-center gap-3 w-full">
                 <div className="w-8 flex justify-center shrink-0">
@@ -281,9 +278,9 @@ const SignCard = () => {
 
             <Button
               className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-4 px-4 justify-start"
-              variant="light"
-              onPress={handleCreateWithKey}
-              isDisabled={loading}
+              variant="ghost"
+              onClick={handleCreateWithKey}
+              disabled={loading}
             >
               <div className="flex items-center gap-3 w-full">
                 <div className="w-8 flex justify-center shrink-0">
@@ -295,7 +292,7 @@ const SignCard = () => {
                 </div>
               </div>
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
     );
@@ -306,22 +303,23 @@ const SignCard = () => {
     return (
       <div className="flex flex-col gap-3 w-full">
         <Header subtitle="Create with Passkey" />
-        <Card className="w-full">
-          <CardBody className="flex flex-col gap-4 p-5">
-            <BackButton onPress={() => setCreateType(null)} />
-            <Input
-              isClearable
-              type="text"
-              label="Username"
-              value={username}
-              description="Choose a name for your passkey"
-              onValueChange={setUsername}
-            />
+        <Card className="w-full border-zinc-800">
+          <CardContent className="flex flex-col gap-4 p-5">
+            <BackButton onClick={() => setCreateType(null)} />
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-gray-400">Username</label>
+              <Input
+                type="text"
+                placeholder="Choose a name for your passkey"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-700"
+              />
+            </div>
             <Button
-              color="primary"
-              variant="solid"
-              isDisabled={!username.trim()}
-              onPress={async () => {
+              className="bg-[#00EF8B] text-black hover:bg-[#00d67d] font-semibold"
+              disabled={!username.trim()}
+              onClick={async () => {
                 try {
                   setRegisterInfo(await createPasskey(username, username));
                 } catch (e) {
@@ -331,7 +329,7 @@ const SignCard = () => {
             >
               Register with Passkey
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
     );

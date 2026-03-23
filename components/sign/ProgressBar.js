@@ -1,5 +1,6 @@
 import { FaRegIdBadge } from "react-icons/fa6";
-import { Card, CardBody, Progress, Link } from "@nextui-org/react";
+import { Card, CardContent } from "../ui/card";
+import { Progress } from "../ui/progress";
 import { useContext, useEffect } from "react";
 import { StoreContext } from '../../contexts'
 import * as fcl from "@onflow/fcl";
@@ -42,8 +43,8 @@ const ProgressBar = ({txId, network}) => {
   }, [txId])
 
   return (
-    <Card className="w-full">
-      <CardBody className="flex flex-col space-y-4 p-6">
+    <Card className="w-full border-zinc-800 bg-zinc-900/90">
+      <CardContent className="flex flex-col space-y-4 p-6">
         <div className="flex items-center gap-4">
           <FaRegIdBadge className="text-2xl" />
           <h1 className="text-2xl font-bold text-gray-300">
@@ -51,14 +52,21 @@ const ProgressBar = ({txId, network}) => {
           </h1>
         </div>
         <Progress
-          size="md"
-          color="primary"
-          isIndeterminate
-          aria-label="Loading..."
-          className="max-w"
+          value={100}
+          className="max-w [&>div]:animate-pulse [&>div]:bg-emerald-500"
         />
-        <Link isExternal showAnchorIcon href={url} underline="hover" color="warning">View in FlowIndex</Link>
-      </CardBody>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-yellow-500 hover:underline text-sm inline-flex items-center gap-1"
+        >
+          View in FlowIndex
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      </CardContent>
     </Card>
   );
 };

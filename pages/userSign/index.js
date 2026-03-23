@@ -1,11 +1,7 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  Avatar,
-  Textarea,
-  Chip,
-} from "@nextui-org/react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Textarea } from "../../components/ui/textarea";
 import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext, useRef } from "react";
 import * as fcl from "@onflow/fcl";
@@ -70,14 +66,18 @@ const UserSign = () => {
 
       <main className={styles.main}>
       <div className="w-2/3 min-w-[calc(max(80%,400px))] max-w-[calc(min(80%,400px))] sm:w-full flex flex-col gap-4">
-          <Card>
+          <Card className="border-zinc-800 bg-zinc-900/90">
             {authzInfo && (
-              <CardBody className="flex flex-col space-y-4 p-6">
+              <CardContent className="flex flex-col space-y-4 p-6">
                 {store.autoSign && (
-                  <Chip color="warning" size="sm" variant="flat">Auto-signing...</Chip>
+                  <Badge variant="outline" className="w-fit border-yellow-600 text-yellow-500 bg-yellow-950/30">Auto-signing...</Badge>
                 )}
                 <div className="flex items-center gap-4">
-                  <Avatar size="lg" src={authzInfo.config?.app?.icon} />
+                  <img
+                    src={authzInfo.config?.app?.icon}
+                    alt=""
+                    className="h-12 w-12 rounded-full bg-zinc-800"
+                  />
                   <div className="flex flex-col gap-1">
                     <h1 className="text-sm font-bold text-gray-500">
                       User Signature Request from
@@ -88,46 +88,44 @@ const UserSign = () => {
                   </div>
                 </div>
 
-                <div className="flex bg-zinc-800 items-center px-4 py-2 rounded-medium gap-2">
+                <div className="flex bg-zinc-800 items-center px-4 py-2 rounded-lg gap-2">
                   <RiGlobalLine className="text-lg text-blue-100" />
                   <span className="text-sm text-blue-100">
                     {authzInfo.config?.client?.hostname || "unknown"}
                   </span>
                 </div>
 
-                <Textarea
-                  isReadOnly
-                  fullWidth
-                  label="Message"
-                  variant="flat"
-                  placeholder="Message to sign"
-                  defaultValue={(() => {
-                    try { return Buffer.from(authzInfo.body.message, 'hex').toString('utf8'); }
-                    catch { return authzInfo.body.message; }
-                  })()}
-                  className="w-full max-h-30"
-                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-400">Message</label>
+                  <Textarea
+                    readOnly
+                    placeholder="Message to sign"
+                    defaultValue={(() => {
+                      try { return Buffer.from(authzInfo.body.message, 'hex').toString('utf8'); }
+                      catch { return authzInfo.body.message; }
+                    })()}
+                    className="w-full max-h-30 bg-zinc-800/50 border-zinc-700 text-gray-300 resize-none"
+                  />
+                </div>
 
                 {!store.autoSign && (
                   <div className="flex gap-4 h-12">
                     <Button
-                      color="default"
-                      className="w-full h-full"
-                      onPress={onReject}
+                      variant="outline"
+                      className="w-full h-full border-zinc-700 hover:bg-zinc-800"
+                      onClick={onReject}
                     >
                       Cancel
                     </Button>
                     <Button
-                      color="primary"
-                      variant="solid"
-                      className="w-full h-full"
-                      onPress={onApproval}
+                      className="w-full h-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={onApproval}
                     >
                       Approve
                     </Button>
                   </div>
                 )}
-              </CardBody>
+              </CardContent>
             )}
           </Card>
         </div>

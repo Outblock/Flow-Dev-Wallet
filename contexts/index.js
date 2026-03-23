@@ -1,4 +1,4 @@
 import { StoreContext } from "./StoreContext";
-import { PerferenceContext } from './PerferenceContext';
+import { PreferenceContext } from './PerferenceContext';
 
-export { StoreContext, PerferenceContext };
+export { StoreContext, PreferenceContext };

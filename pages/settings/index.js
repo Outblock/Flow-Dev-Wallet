@@ -2,16 +2,13 @@ import Head from "next/head";
 import styles from "../../styles/Home.module.css";
 import { useEffect, useState, useContext } from "react";
 import { StoreContext } from "../../contexts";
-import {
-  Card,
-  CardBody,
-  Select,
-  SelectItem,
-  Input,
-  Switch,
-  Button,
-  Chip,
-} from "@nextui-org/react";
+import { Card, CardContent } from "../../components/ui/card";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
+import { Input } from "../../components/ui/input";
+import { Switch } from "../../components/ui/switch";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Label } from "../../components/ui/label";
 import {
   IoArrowBackOutline,
   IoGlobeOutline,
@@ -88,10 +85,10 @@ export default function Settings() {
           {/* Header */}
           <div className="flex items-center gap-3">
             <Button
-              isIconOnly
-              variant="light"
-              onPress={() => Router.push("/")}
-              size="sm"
+              variant="ghost"
+              size="icon"
+              onClick={() => Router.push("/")}
+              className="h-9 w-9"
             >
               <IoArrowBackOutline className="text-xl text-gray-400" />
             </Button>
@@ -100,64 +97,68 @@ export default function Settings() {
 
           {/* Network */}
           <Card>
-            <CardBody className="flex flex-col gap-4 p-5">
+            <CardContent className="flex flex-col gap-4 p-5">
               <div className="flex items-center gap-3">
                 <IoGlobeOutline className="text-xl text-blue-400" />
                 <h2 className="text-base font-semibold text-gray-300">Network</h2>
               </div>
-              <Select
-                label="Network"
-                selectedKeys={[selectedNetwork]}
-                onChange={(e) => handleNetworkChange(e.target.value)}
-                size="sm"
-              >
-                {NETWORK_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.key} value={opt.key}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </Select>
-            </CardBody>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="network-select">Network</Label>
+                <Select value={selectedNetwork} onValueChange={handleNetworkChange}>
+                  <SelectTrigger id="network-select">
+                    <SelectValue placeholder="Select network" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NETWORK_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.key} value={opt.key}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
           </Card>
 
           {/* RPC Endpoint */}
           <Card>
-            <CardBody className="flex flex-col gap-4 p-5">
+            <CardContent className="flex flex-col gap-4 p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <IoServerOutline className="text-xl text-green-400" />
                   <h2 className="text-base font-semibold text-gray-300">Access Node RPC</h2>
                 </div>
-                <Button size="sm" variant="light" onPress={resetRpc} className="text-gray-500 text-xs">
+                <Button variant="ghost" size="sm" onClick={resetRpc} className="text-gray-500 text-xs">
                   Reset to default
                 </Button>
               </div>
-              <Input
-                label="RPC Endpoint"
-                value={rpcUrl}
-                onValueChange={handleRpcChange}
-                size="sm"
-                variant="bordered"
-                placeholder={getDefaultRpc(selectedNetwork)}
-              />
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="rpc-input">RPC Endpoint</Label>
+                <Input
+                  id="rpc-input"
+                  value={rpcUrl}
+                  onChange={(e) => handleRpcChange(e.target.value)}
+                  placeholder={getDefaultRpc(selectedNetwork)}
+                />
+              </div>
               <p className="text-xs text-gray-600">
                 Default: {getDefaultRpc(selectedNetwork)}
               </p>
-            </CardBody>
+            </CardContent>
           </Card>
 
           {/* Auto-Sign */}
           <Card>
-            <CardBody className="p-5">
+            <CardContent className="p-5">
               <div className="flex items-center gap-4">
                 <IoCreateOutline className="text-xl text-orange-400" />
                 <div className="flex flex-col grow">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-sm text-gray-300">Auto-Sign</p>
                     {autoSign && (
-                      <Chip color="warning" size="sm" variant="flat" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-orange-500/20 text-orange-400 border-orange-500/30">
                         ON
-                      </Chip>
+                      </Badge>
                     )}
                   </div>
                   <p className="text-xs text-gray-500">
@@ -166,30 +167,29 @@ export default function Settings() {
                   </p>
                 </div>
                 <Switch
-                  isSelected={autoSign}
-                  onValueChange={handleAutoSignChange}
-                  color="warning"
+                  checked={autoSign}
+                  onCheckedChange={handleAutoSignChange}
                 />
               </div>
-            </CardBody>
+            </CardContent>
           </Card>
 
           {/* Info */}
           <Card>
-            <CardBody className="p-5">
+            <CardContent className="p-5">
               <div className="flex flex-col gap-2">
                 <p className="text-xs text-gray-600">
                   Current config
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Chip size="sm" variant="flat">{selectedNetwork}</Chip>
-                  <Chip size="sm" variant="flat" className="max-w-[280px] truncate">{rpcUrl}</Chip>
-                  <Chip size="sm" variant="flat" color={autoSign ? "warning" : "default"}>
+                  <Badge variant="secondary">{selectedNetwork}</Badge>
+                  <Badge variant="secondary" className="max-w-[280px] truncate">{rpcUrl}</Badge>
+                  <Badge variant="secondary" className={autoSign ? "bg-orange-500/20 text-orange-400 border-orange-500/30" : ""}>
                     auto-sign: {autoSign ? "on" : "off"}
-                  </Chip>
+                  </Badge>
                 </div>
               </div>
-            </CardBody>
+            </CardContent>
           </Card>
         </div>
       </main>
