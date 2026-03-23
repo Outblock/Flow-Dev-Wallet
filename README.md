@@ -44,6 +44,8 @@ bun run dev             # starts on http://localhost:3003
 
 Open [http://localhost:3003](http://localhost:3003) to create or import a wallet.
 
+**Hosted version:** [https://dev-wallet.flowindex.io](https://dev-wallet.flowindex.io)
+
 ## Configuration
 
 ### Environment Variables (.env)
@@ -59,7 +61,7 @@ Open [http://localhost:3003](http://localhost:3003) to create or import a wallet
 | `emulatorServiceAddress` | Emulator service account address | For emulator (default: `0xf8d6e0586b0a20c7`) |
 | `emulatorAddress` | Emulator access node URL | No (default: `http://localhost:8888`) |
 | `flowindexUrl` | FlowIndex API base URL | No (default: `https://flowindex.io/api`) |
-| `host` | Wallet host URL | No (default: `http://localhost:3003`) |
+| `host` | Wallet host URL | No (default: `http://localhost:3003`, prod: `https://dev-wallet.flowindex.io`) |
 
 ### Settings Page
 
@@ -140,6 +142,7 @@ const connectors = connectorsForWallets(
       groupName: "Recommended",
       wallets: [
         flowDevWallet(), // defaults to http://localhost:3003/connect/popup
+        // Or use hosted: flowDevWallet({ walletUrl: "https://dev-wallet.flowindex.io/connect/popup" })
         // ... other wallets
       ],
     },
