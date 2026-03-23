@@ -2,10 +2,9 @@ const FLOW_BIP44_PATH = "m/44'/539'/0'/0/0";
 
 const KEY_TYPE = {
     PASSKEY: 'Passkey',
-    GOOGLE_DRIVE: 'GoogleDrive',
     SEED_PHRASE: 'SeedPhrase',
-    KEYSTORE: 'Keystore',
     PRIVATE_KEY: 'PrivateKey',
+    KEYSTORE: 'Keystore',
 }
 
 const SIGN_ALGO = {
@@ -14,7 +13,7 @@ const SIGN_ALGO = {
 }
 
 const HASH_ALGO = {
-    SHA256: 'SHA256',
+    SHA256: 'SHA2_256',
     SHA3_256 : 'SHA3_256'
 }
 

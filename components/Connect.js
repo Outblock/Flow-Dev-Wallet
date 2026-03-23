@@ -16,7 +16,7 @@ import * as fcl from "@onflow/fcl";
 import { RiGlobalLine } from "react-icons/ri";
 import { FaCircleCheck } from "react-icons/fa6";
 import { encode } from "@onflow/rlp"
-import { signAcctProofWithPassKey, signWithKey } from "../utils/sign";
+import { signWithKey } from "../utils/sign";
 
 const Connect = ({ address }) => {
   const { store, setStore } = useContext(StoreContext);
@@ -80,13 +80,16 @@ const Connect = ({ address }) => {
             endpoint: `${window.location.origin}/api/preAuthz`,
             f_type: "Service",
             f_vsn: "1.0.0",
-            identity: { address: process.env.payerAddress, keyId: process.env.payerKeyIndex },
+            identity: {
+              address: store.network === "emulator" ? process.env.emulatorServiceAddress : process.env.payerAddress,
+              keyId: store.network === "emulator" ? 0 : process.env.payerKeyIndex,
+            },
             method: "HTTP/POST",
             network: store.network,
             type: "pre-authz",
             uid: "fpk#pre-authz",
             params: {
-              address: store.address, 
+              address: store.address,
               keyId: parseInt(store.keyInfo.keyIndex)
             }
           },
@@ -105,7 +108,17 @@ const Connect = ({ address }) => {
     if (authnInfo.body?.nonce && authnInfo.body?.appIdentifier && store.id) {
         console.log('rlp ==>', store.address, authnInfo.body?.nonce, authnInfo.body?.appIdentifier)
         const combind = fcl.WalletUtils.encodeAccountProof({appIdentifier: authnInfo.body?.appIdentifier, address: store.address, nonce: authnInfo.body?.nonce})
-        const signature = await signWithKey(store, combind)
+        const result = await signWithKey(store, combind)
+        const compSig = {
+            f_type: "CompositeSignature",
+            f_vsn: "1.0.0",
+            addr: store.address,
+            keyId: parseInt(store.keyInfo.keyIndex),
+            signature: result.signature,
+        };
+        if (result.extensionData) {
+            compSig.extensions = [result.extensionData];
+        }
         response.services.push(
             {
                 endpoint: `${window.location.origin}/acct-proof`,
@@ -120,15 +133,7 @@ const Connect = ({ address }) => {
                     f_vsn: "2.0.0",
                     address: store.address,
                     nonce: authnInfo.body?.nonce,
-                    signatures: [
-                      {
-                        f_type: "CompositeSignature",
-                        f_vsn: "1.0.0",
-                        addr: store.address,
-                        keyId: parseInt(store.keyInfo.keyIndex),
-                        signature: signature
-                      }
-                    ]
+                    signatures: [compSig]
                 }
             }
         )

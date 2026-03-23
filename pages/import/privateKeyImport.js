@@ -2,9 +2,8 @@ import { Textarea, Input, Button } from "@nextui-org/react";
 import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext } from "react";
 import { findAddressWithKey } from "../../utils/findAddressWithPubKey";
-import { pk2PubKey } from "../../utils/passkey";
-import { initWasm } from "@trustwallet/wallet-core";
-import { HASH_ALGO, KEY_TYPE, SIGN_ALGO } from "../../utils/constants";
+import { pk2PubKey } from "../../utils/findAddressWithPK";
+import { KEY_TYPE } from "../../utils/constants";
 import { findAddressWithPK } from "../../utils/findAddressWithPK";
 
 const PrivateKeyImport = ({ onOpen, onImport }) => {

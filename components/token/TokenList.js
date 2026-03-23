@@ -1,60 +1,56 @@
 import {
-    FaHashtag,
-  } from "react-icons/fa6";
-  import { TbMathMax } from "react-icons/tb";
-  import {
     Listbox,
-    ListboxSection,
     ListboxItem,
-    Avatar
+    Spinner
   } from "@nextui-org/react";
-  import { useContext, useEffect, useState } from "react";
+  import { useContext } from "react";
   import { StoreContext } from "../../contexts";
-  import * as fcl from "@onflow/fcl";
+  import { useFlowTokens } from "../../hooks/useTokens";
   import TokenItem from "./TokenItem"
 
   const flowTokenInfo = {
     name: "Flow",
     symbol: "FLOW",
     icon: "https://github.com/Outblock/Assets/blob/main/ft/flow/logo.png?raw=true",
-}
-
+  }
 
   const TokenList = () => {
     const { store } = useContext(StoreContext);
-    const [tokenInfo, setTokenInfo] = useState(flowTokenInfo)
+    const { data: tokens, loading, error } = useFlowTokens(store.address);
 
-    useEffect(() => {
-        const fetchBalance = async () => {
-          try {
-            const result = await fcl.account(store.address);
-            console.log("fetchBalance ==>", result);
-            setTokenInfo((s) => ({...s, balance: result.balance}))
-          } catch (e) {
-            console.log("error ==>", e)
-          }
-        };
-    
-        if (store.address) {
-          fetchBalance();
-          // const userInfo = { ...store };
-          // delete userInfo.keyInfo;
-          // window.localStorage.setItem("store", JSON.stringify(userInfo));
-        }
-      }, []);
+    if (loading) {
+      return <Spinner size="sm" />;
+    }
+
+    if (error) {
+      return <p className="text-sm text-red-400">Failed to load tokens</p>;
+    }
+
+    const tokenList = tokens && Array.isArray(tokens) ? tokens : [];
 
     return (
-
         <Listbox
-          aria-label="Actions"
+          aria-label="Token list"
           variant="flat"
-          onAction={(key) => alert(key)}
         >
-        <ListboxItem  key="new"> <TokenItem tokenInfo={tokenInfo}/> </ListboxItem>
-        </Listbox> 
-
+          {tokenList.length > 0 ? (
+            tokenList.map((token, i) => (
+              <ListboxItem key={token.symbol || i}>
+                <TokenItem tokenInfo={{
+                  name: token.name || token.symbol,
+                  symbol: token.symbol,
+                  icon: token.icon || flowTokenInfo.icon,
+                  balance: token.balance,
+                }} />
+              </ListboxItem>
+            ))
+          ) : (
+            <ListboxItem key="flow">
+              <TokenItem tokenInfo={flowTokenInfo} />
+            </ListboxItem>
+          )}
+        </Listbox>
     );
   };
-  
+
   export default TokenList;
-  

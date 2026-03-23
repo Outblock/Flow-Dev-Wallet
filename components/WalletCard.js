@@ -31,6 +31,7 @@ import SignOut from "./sign/SignOut";
 import { CustomTab } from "./tab/CustomTab";
 import Setting from "./setting/Setting";
 import TokenList from "./token/TokenList";
+import EvmTokenList from "./token/EvmTokenList";
 import { IoCardOutline } from "react-icons/io5";
 import { isEnableBiometric } from "../account";
 import { TAB } from "./tab/Tab";
@@ -40,6 +41,14 @@ const WalletCard = ({ address }) => {
   const { store, setStore } = useContext(StoreContext);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [selected, setSelected] = useState("Token");
+  const [chainTab, setChainTab] = useState("flow");
+
+  const evmAddress = store.keyInfo?.evmAddress;
+
+  const copyAddress = (addr) => {
+    navigator.clipboard.writeText(addr);
+    toast.success("Copied!");
+  };
 
   return (
     <Card className="w-full h-full">
@@ -70,7 +79,7 @@ const WalletCard = ({ address }) => {
                 size="md"
                 className="text-2xl bg-yellow-500"
               />
-              <div className="flex flex-col items-start gap-2 grow">
+              <div className="flex flex-col items-start gap-2 grow min-w-0">
                 <div className="flex gap-2">
                   <h1 className="font-bold">{store.username || "Name"}</h1>
                   {process.env.network !== "mainnet" && (
@@ -84,26 +93,40 @@ const WalletCard = ({ address }) => {
                     </Chip>
                   )}
                 </div>
-                <h1 className="text-gray-400">{store.address}</h1>
+                <div className="flex items-center gap-2 w-full">
+                  <Chip size="sm" variant="flat" color="primary" className="text-xs">Flow</Chip>
+                  <span className="text-gray-400 text-sm truncate">{store.address}</span>
+                  <Button
+                    variant="light"
+                    isIconOnly
+                    size="sm"
+                    onPress={() => copyAddress(store.address)}
+                  >
+                    <LuCopy className="text-sm" />
+                  </Button>
+                </div>
+                {evmAddress && (
+                  <div className="flex items-center gap-2 w-full">
+                    <Chip size="sm" variant="flat" color="secondary" className="text-xs">EVM</Chip>
+                    <span className="text-gray-400 text-sm truncate">{evmAddress}</span>
+                    <Button
+                      variant="light"
+                      isIconOnly
+                      size="sm"
+                      onPress={() => copyAddress(evmAddress)}
+                    >
+                      <LuCopy className="text-sm" />
+                    </Button>
+                  </div>
+                )}
               </div>
-              <Button
-                variant="light"
-                isIconOnly
-                onPress={() => {
-                  navigator.clipboard.writeText(store.address);
-                }}
-              >
-                <LuCopy className="text-lg" />
-              </Button>
             </div>
           </CardBody>
         </Card>
 
         <div className="flex items-center w-full gap-4">
           <ButtonGroup
-            // radius="full"
             className="basis-3/4 w-full grow"
-            // isDisabled
           >
             <Button className="w-full" onPress={()=> toast('Coming Soon', {icon: '🚧'})}>
               <IoArrowUpOutline className="text-lg" />
@@ -121,8 +144,6 @@ const WalletCard = ({ address }) => {
 
           <Button
             className="basis-1/4 w-full"
-            // radius="full"
-            // isDisabled
             startContent={<IoCardOutline className="text-lg" />}
             onPress={()=> toast('Coming Soon', {icon: '🚧'})}
           >
@@ -149,7 +170,30 @@ const WalletCard = ({ address }) => {
               {(() => {
                 switch (item.id) {
                   case 'Token':
-                    return (<TokenList/>)
+                    return (
+                      <div className="flex flex-col gap-2 h-full">
+                        {evmAddress && (
+                          <Tabs
+                            aria-label="Chain selector"
+                            selectedKey={chainTab}
+                            onSelectionChange={setChainTab}
+                            variant="underlined"
+                            classNames={{
+                              tabList: "gap-4",
+                              tab: "px-2 h-8",
+                            }}
+                          >
+                            <Tab key="flow" title="Flow" />
+                            <Tab key="evm" title="EVM" />
+                          </Tabs>
+                        )}
+                        {chainTab === "flow" ? (
+                          <TokenList />
+                        ) : (
+                          <EvmTokenList evmAddress={evmAddress} />
+                        )}
+                      </div>
+                    )
                   case 'NFT':
                     return (<p> This is a NFT Tab </p>)
                   case 'Setting':

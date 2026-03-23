@@ -1,8 +1,0 @@
-<resources>
-    <string name="app_name">TestPasskey</string>
-    <string name="asset_statements" translatable="false">
-    [{
-    \"include\": \"https://testnet.passkey.lilico.dev/.well-known/assetlinks.json\"
-    }]
-    </string>
-</resources>

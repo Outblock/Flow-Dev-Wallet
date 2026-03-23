@@ -3,7 +3,6 @@ import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext } from "react";
 import { IoMdEye } from "react-icons/io";
 import { IoMdEyeOff } from "react-icons/io";
-import { jsonToKey } from "../../utils/passkey";
 import { findAddressWithPK } from "../../utils/findAddressWithPK";
 import { KEY_TYPE } from "../../utils/constants";
 
@@ -33,9 +32,15 @@ const JsonImport = ({onOpen, onImport}) => {
       const keystore = e.target[0].value
       const password = e.target[1].value
       const address = e.target[3].value
-      const pk = await jsonToKey(keystore, password)
-      const pkHex = Buffer.from(pk.data()).toString('hex')
-      const result = await findAddressWithPK(pkHex, address)
+      // Parse the JSON keystore and extract the private key hex directly.
+      // Full keystore decryption (V3) is not supported without wallet-core.
+      // Expect the JSON to contain a "privateKey" field as hex.
+      const parsed = JSON.parse(keystore);
+      const pkHex = parsed.privateKey || parsed.private_key;
+      if (!pkHex) {
+        throw new Error("JSON must contain a 'privateKey' field with hex-encoded private key");
+      }
+      const result = await findAddressWithPK(pkHex.replace(/^0x/, ""), address)
       console.log(result)
       if (!result) {
         onOpen();

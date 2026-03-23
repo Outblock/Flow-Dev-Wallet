@@ -10,7 +10,7 @@ const ProgressBar = ({txId, network}) => {
 
   const {store, setStore} = useContext(StoreContext)
 
-  const url = `https://${network === 'testnet' ? 'testnet.' : ''}flowdiver.io/tx/${txId}`
+  const url = `https://${network === 'testnet' ? 'testnet.' : ''}flowindex.io/tx/${txId}`
 
   useEffect(() => {
     const waitForTx = async () => {
@@ -57,7 +57,7 @@ const ProgressBar = ({txId, network}) => {
           aria-label="Loading..."
           className="max-w"
         />
-        <Link isExternal showAnchorIcon href={url} underline="hover" color="warning">View in FlowDiver</Link>
+        <Link isExternal showAnchorIcon href={url} underline="hover" color="warning">View in FlowIndex</Link>
       </CardBody>
     </Card>
   );

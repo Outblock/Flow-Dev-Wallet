@@ -1,8 +1,7 @@
 import { Card, CardBody, Switch } from "@nextui-org/react";
 import { useContext, useEffect, useState } from "react";
 import { StoreContext } from "../../contexts";
-import { getPasskey, getPKfromLogin } from "../../utils/passkey";
-import { FLOW_BIP44_PATH, KEY_TYPE } from "../../utils/constants";
+import { KEY_TYPE } from "../../utils/constants";
 import KeyInfoCard from "./KeyInfoCard";
 import {
   IoKeyOutline,
@@ -18,16 +17,20 @@ const Setting = () => {
 
   const handleKeyInfo = async (isSelected) => {
     if (isSelected) {
+      // With FLIP-264 passkeys, there's no pk/mnemonic to clear.
+      // For non-passkey keys, clear sensitive fields.
       const userInfo = { ...store };
-      delete userInfo.keyInfo.pk;
-      delete userInfo.keyInfo.mnemonic;
+      if (userInfo.keyInfo) {
+        delete userInfo.keyInfo.pk;
+        delete userInfo.keyInfo.mnemonic;
+      }
       setStore(userInfo);
-      login(userInfo)
+      login(userInfo);
     } else {
-      const result = await getPasskey(store.id);
-      const keyInfo = await getPKfromLogin(result);
-      setStore((s) => ({ ...s, keyInfo: keyInfo }));
-      login({ ...store, keyInfo: keyInfo });
+      // With FLIP-264, passkey info is already in store — no need to re-derive.
+      // For passkey accounts, the keyInfo stays as-is (credentialId-based).
+      setStore((s) => ({ ...s }));
+      login(store);
     }
   };
 

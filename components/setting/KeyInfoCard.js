@@ -3,7 +3,6 @@ import { TbMathMax } from "react-icons/tb";
 import { Snippet, Card, CardBody, Code, Chip } from "@nextui-org/react";
 import { useContext, useEffect, useState } from "react";
 import { StoreContext } from "../../contexts";
-import { getPasskey, getPKfromLogin } from "../../utils/passkey";
 import { FLOW_BIP44_PATH, KEY_TYPE } from "../../utils/constants";
 
 const KeyInfoCard = () => {
@@ -12,17 +11,11 @@ const KeyInfoCard = () => {
   const [keyInfo, setKeyInfo] = useState(null);
 
   useEffect(() => {
-    const fetchKeyInfo = async () => {
-      if (store.keyInfo && store.keyInfo.type !== KEY_TYPE.PASSKEY) {
-        setKeyInfo(store.keyInfo);
-      } else {
-        const result = await getPasskey(store.id || "");
-        const keyInfo = await getPKfromLogin(result);
-        setKeyInfo(keyInfo);
-      }
-    };
-
-    fetchKeyInfo();
+    // With FLIP-264, passkeys don't expose private keys.
+    // Just use whatever keyInfo is stored.
+    if (store.keyInfo) {
+      setKeyInfo(store.keyInfo);
+    }
   }, []);
 
   return (
@@ -59,16 +52,26 @@ const KeyInfoCard = () => {
               </div>
             )}
 
-            <h6> Private Key </h6>
-            <div className="col-span-3 place-self-auto h-auto min-h-fit">
-              <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.pk}</Snippet>
-            </div>
+            {keyInfo.pk && <h6> Private Key </h6>}
+            {keyInfo.pk && (
+              <div className="col-span-3 place-self-auto h-auto min-h-fit">
+                <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.pk}</Snippet>
+              </div>
+            )}
 
-            <h6> Public Key </h6>
-            <div className="col-span-3 ">
-              {/* <Code className="whitespace-normal w-full">{keyInfo.pubK}</Code> */}
-              <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.pubK}</Snippet>
-            </div>
+            {keyInfo.credentialId && <h6> Credential ID </h6>}
+            {keyInfo.credentialId && (
+              <div className="col-span-3">
+                <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.credentialId}</Snippet>
+              </div>
+            )}
+
+            {keyInfo.pubK && <h6> Public Key </h6>}
+            {keyInfo.pubK && (
+              <div className="col-span-3 ">
+                <Snippet symbol="" classNames={{base: "w-full break-all dark", content: "dark bg-black", pre:["break-all", "whitespace-break-spaces"]}}>{keyInfo.pubK}</Snippet>
+              </div>
+            )}
 
             <h6> Key Index </h6>
             <div className="col-span-3 ">

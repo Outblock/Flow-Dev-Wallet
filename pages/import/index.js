@@ -13,7 +13,6 @@ import { FaKey } from "react-icons/fa6";
 import { KEY_TAB } from "../../utils/keyTab";
 import EmptyAddressModal from "./emptyAddressModal";
 import JsonImport from "./jsonImport";
-import GoogleDriveImport from "./googleDriveImport";
 import SeedPhraseImport from "./seedPhraseImport";
 import PrivateKeyImport from "./privateKeyImport";
 import ImportAddressModel from "./importAddressModal";
@@ -72,8 +71,7 @@ const Import = () => {
                 </h1>
               </div>
               <h1 className="text-1xl text-gray-500 pb-3">
-                Support Flow Wallet, Blocto, seed phrase, keystore and private
-                key
+                Import using seed phrase, private key, or JSON keystore
               </h1>
             </div>
             <CardBody
@@ -113,12 +111,6 @@ const Import = () => {
                     >
                       {(() => {
                         switch (item.id) {
-                          case "json":
-                            return (
-                              <JsonImport onOpen={onOpen} onImport={handleImport} />
-                            );
-                          case "drive":
-                            return <GoogleDriveImport onOpen={onOpen} />;
                           case "seed":
                             return (
                               <SeedPhraseImport
@@ -132,6 +124,10 @@ const Import = () => {
                                 onOpen={onOpen}
                                 onImport={handleImport}
                               />
+                            );
+                          case "json":
+                            return (
+                              <JsonImport onOpen={onOpen} onImport={handleImport} />
                             );
                           default:
                             return <p>Not available</p>;

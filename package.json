@@ -1,18 +1,20 @@
 {
-  "name": "passkey-exp",
+  "name": "flow-dev-wallet",
   "version": "0.1.0",
+  "description": "Flow Dev Wallet - Multi-signer wallet supporting passkey, seed phrase, and private key",
   "private": true,
   "scripts": {
-    "dev": "next dev && sh post-build.sh",
-    "build": " next build && sh post-build.sh",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "bun next dev",
+    "build": "bun next build",
+    "start": "bun next start",
+    "lint": "bun next lint"
   },
   "dependencies": {
+    "@flowindex/flow-passkey": "latest",
+    "@flowindex/flow-signer": "latest",
     "@nextui-org/react": "^2.2.9",
     "@onflow/fcl": "^1.9.0",
     "@onflow/rlp": "^1.2.1",
-    "@trustwallet/wallet-core": "4.0.13",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "elliptic": "^6.5.4",
@@ -25,7 +27,8 @@
     "react-hot-toast": "^2.4.1",
     "react-icons": "^4.12.0",
     "react-lottie": "^1.2.4",
-    "react-tsparticles": "^2.12.2"
+    "react-tsparticles": "^2.12.2",
+    "viem": "^2.47.6"
   },
   "devDependencies": {
     "@types/react": "18.2.46",
