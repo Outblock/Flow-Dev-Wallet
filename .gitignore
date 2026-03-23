@@ -39,3 +39,4 @@ Passkey-Android/.idea
 *.xcuserstate
 .env.mainnet
 .env.testnet
+test-results/
