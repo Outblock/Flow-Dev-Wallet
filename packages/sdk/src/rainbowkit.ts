@@ -27,7 +27,7 @@ export interface FlowDevWalletOptions {
  * Returns a CreateWalletFn compatible with connectorsForWallets.
  */
 export function flowDevWallet(options: FlowDevWalletOptions = {}): (params: any) => any {
-  const walletUrl = options.walletUrl ?? "http://localhost:3003/connect/popup"
+  const walletUrl = options.walletUrl ?? "https://dev-wallet.flowindex.io/connect/popup"
 
   return function createWallet(_params: any): any {
     return {

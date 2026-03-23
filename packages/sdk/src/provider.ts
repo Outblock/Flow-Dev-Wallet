@@ -33,7 +33,7 @@ const SIGNING_METHODS = new Set([
 
 export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
   const {
-    walletUrl = "http://localhost:3003/connect/popup",
+    walletUrl = "https://dev-wallet.flowindex.io/connect/popup",
     popupFeatures = "width=420,height=640,left=100,top=100,scrollbars=yes",
   } = config
 

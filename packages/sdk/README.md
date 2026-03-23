@@ -21,7 +21,7 @@ const connectors = connectorsForWallets(
     {
       groupName: "Dev",
       wallets: [
-        flowDevWallet({ walletUrl: "http://localhost:3003/connect/popup" }),
+        flowDevWallet({ walletUrl: "https://dev-wallet.flowindex.io/connect/popup" }),
       ],
     },
   ],
@@ -35,7 +35,7 @@ const connectors = connectorsForWallets(
 import { createFlowDevWalletProvider } from "@outblock/flow-dev-wallet-sdk";
 
 const provider = createFlowDevWalletProvider({
-  walletUrl: "http://localhost:3003/connect/popup",
+  walletUrl: "https://dev-wallet.flowindex.io/connect/popup",
 });
 
 // Connect
@@ -60,7 +60,7 @@ const txHash = await provider.request({
 import { announceFlowDevWallet } from "@outblock/flow-dev-wallet-sdk";
 
 // Call once at app startup — wallets supporting EIP-6963 will auto-detect it
-announceFlowDevWallet({ walletUrl: "http://localhost:3003/connect/popup" });
+announceFlowDevWallet({ walletUrl: "https://dev-wallet.flowindex.io/connect/popup" });
 ```
 
 ## How It Works

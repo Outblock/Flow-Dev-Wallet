@@ -141,8 +141,8 @@ const connectors = connectorsForWallets(
     {
       groupName: "Recommended",
       wallets: [
-        flowDevWallet(), // defaults to http://localhost:3003/connect/popup
-        // Or use hosted: flowDevWallet({ walletUrl: "https://dev-wallet.flowindex.io/connect/popup" })
+        flowDevWallet(), // defaults to https://dev-wallet.flowindex.io/connect/popup
+        // Or use local: flowDevWallet({ walletUrl: "http://localhost:3003/connect/popup" })
         // ... other wallets
       ],
     },
