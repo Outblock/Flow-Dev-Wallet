@@ -26,7 +26,9 @@ Key capabilities:
 | **EVM Support** | EOA address derivation from private key (`m/44'/60'` for mnemonics) via viem |
 | **FCL Protocol** | Full wallet services: authn, authz, user-signature, pre-authz, account-proof |
 | **EIP-1193 Provider** | `eth_requestAccounts`, `personal_sign`, `eth_sendTransaction`, `eth_signTypedData_v4` |
-| **Auto-Sign** | Automatically approve all signing requests — ideal for e2e tests |
+| **Auto-Sign** | Secure auto-approve with double opt-in, origin whitelist, and passkey guard |
+| **Saved Accounts** | Encrypted local key storage (AES-GCM-256) with quick-switch between accounts |
+| **SDK Package** | [`@outblock/flow-dev-wallet-sdk`](https://www.npmjs.com/package/@outblock/flow-dev-wallet-sdk) — one-line RainbowKit integration |
 | **URL Params** | Pre-configure wallet via query parameters for automation |
 | **Settings Page** | Network selector, custom RPC endpoint, auto-sign toggle |
 | **FlowIndex API** | Token and NFT display for both Flow and EVM addresses |
@@ -120,27 +122,24 @@ Supported FCL services:
 
 ### EVM DApps (wagmi/RainbowKit)
 
-The wallet exposes an EIP-1193 provider via a popup window at `/connect/popup`. To integrate it into your RainbowKit dApp:
+Install the SDK:
 
-**1. Copy the provider SDK into your project:**
+```bash
+npm install @outblock/flow-dev-wallet-sdk
+```
 
-Copy `lib/flowindex-sdk/` from [flow-evm-rainbow](https://github.com/Outblock/flow-evm-rainbow) into your project (or reference the files below). The SDK contains:
-- `provider.ts` — EIP-1193 provider that communicates with the wallet popup via `postMessage`
-- `rainbowkit.ts` — RainbowKit custom wallet adapter
-
-**2. Add the wallet to your RainbowKit config:**
+Add to your RainbowKit config:
 
 ```typescript
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
-import { flowIndexWallet } from "./lib/flowindex-sdk/rainbowkit";
+import { flowDevWallet } from "@outblock/flow-dev-wallet-sdk/rainbowkit";
 
 const connectors = connectorsForWallets(
   [
     {
       groupName: "Recommended",
       wallets: [
-        // Point to your running wallet instance
-        flowIndexWallet({ walletUrl: "http://localhost:3003/connect/popup" }),
+        flowDevWallet(), // defaults to http://localhost:3003/connect/popup
         // ... other wallets
       ],
     },
@@ -149,7 +148,7 @@ const connectors = connectorsForWallets(
 );
 ```
 
-**3. Use with wagmi config:**
+Use with wagmi config:
 
 ```typescript
 import { createConfig, http } from "@wagmi/core";
@@ -163,6 +162,22 @@ export const config = createConfig({
     [flowMainnet.id]: http(),
   },
 });
+```
+
+Or use the provider directly (without RainbowKit):
+
+```typescript
+import { createFlowDevWalletProvider } from "@outblock/flow-dev-wallet-sdk";
+
+const provider = createFlowDevWalletProvider();
+const accounts = await provider.request({ method: "eth_requestAccounts" });
+```
+
+Or auto-announce via EIP-6963:
+
+```typescript
+import { announceFlowDevWallet } from "@outblock/flow-dev-wallet-sdk";
+announceFlowDevWallet(); // wallets supporting EIP-6963 will auto-detect it
 ```
 
 **How it works:**
@@ -285,7 +300,20 @@ await page.evaluate(() => {
 
 ### Auto-Sign Mode
 
-When enabled (via Settings page, URL param `?autoSign=true`, or localStorage), the wallet automatically approves:
+Auto-sign requires **all** of the following to be active:
+
+| Condition | Description |
+|-----------|-------------|
+| Settings toggle ON | User must manually enable in `/settings` |
+| URL param `?autoSign=true` | Must be present in the session URL (valid for 24h) |
+| Origin whitelist | Only dApps from whitelisted origins are auto-signed |
+| Non-passkey wallet | Passkey wallets cannot auto-sign (WebAuthn requires user gesture) |
+
+**Default whitelist:** `localhost`, `127.0.0.1` (configurable in Settings).
+
+A red warning banner is displayed globally when auto-sign is active.
+
+When all conditions are met, the wallet automatically approves:
 - FCL authentication (authn) — popup auto-approves and auto-closes
 - FCL transaction signing (authz) — popup auto-approves and auto-closes
 - FCL message signing (userSign) — popup auto-approves and auto-closes
@@ -333,7 +361,13 @@ utils/
   config.js              # FCL configuration helper
   flowindex.js           # FlowIndex API client (tokens, NFTs, balances)
   crypto.js              # AES-GCM encryption for local key storage
+  autoSign.js            # Auto-sign security: double opt-in, origin whitelist, passkey guard
   constants.js           # Key types, sign algorithms, hash algorithms
+packages/
+  sdk/                   # @outblock/flow-dev-wallet-sdk npm package
+    src/provider.ts      # EIP-1193 provider (popup + postMessage)
+    src/rainbowkit.ts    # RainbowKit custom wallet adapter
+    src/announce.ts      # EIP-6963 auto-discovery
 e2e/                    # Playwright e2e tests
   helpers.js             # Test utilities and constants
   wallet.spec.js         # Wallet core tests
