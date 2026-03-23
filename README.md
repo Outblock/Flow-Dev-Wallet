@@ -81,7 +81,7 @@ http://localhost:3003?seed=a3f563dd0926199530ab89d35760009b7384a2f41ce4faaf663dc
 
 ## Architecture
 
-- **Next.js 13** with NextUI + Tailwind CSS
+- **Next.js 16** with shadcn/ui + Tailwind CSS + Turbopack
 - **@flowindex/flow-passkey** — FLIP-264 WebAuthn credential creation and signing
 - **@flowindex/flow-signer** — Unified `LocalSigner` abstraction for key-based signing
 - **@onflow/fcl** — Flow Client Library for wallet protocol
@@ -94,7 +94,7 @@ http://localhost:3003?seed=a3f563dd0926199530ab89d35760009b7384a2f41ce4faaf663dc
 |------|-------------|----------|---------------|
 | Passkey | FLIP-264 WebAuthn | (ERC-4337 planned) | P256 / SHA256 |
 | Seed Phrase | LocalSigner (secp256k1) | EOA via `m/44'/60'` | secp256k1 / SHA256 |
-| Private Key | LocalSigner (P256) | EOA direct derivation | P256 / SHA256 |
+| Private Key | LocalSigner (configurable) | EOA direct derivation | secp256k1 / SHA256 (default) |
 
 ## DApp Integration
 
@@ -120,10 +120,59 @@ Supported FCL services:
 
 ### EVM DApps (wagmi/RainbowKit)
 
-The wallet exposes an EIP-1193 provider via a popup window at `/connect/popup`.
+The wallet exposes an EIP-1193 provider via a popup window at `/connect/popup`. To integrate it into your RainbowKit dApp:
+
+**1. Copy the provider SDK into your project:**
+
+Copy `lib/flowindex-sdk/` from [flow-evm-rainbow](https://github.com/Outblock/flow-evm-rainbow) into your project (or reference the files below). The SDK contains:
+- `provider.ts` — EIP-1193 provider that communicates with the wallet popup via `postMessage`
+- `rainbowkit.ts` — RainbowKit custom wallet adapter
+
+**2. Add the wallet to your RainbowKit config:**
+
+```typescript
+import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { flowIndexWallet } from "./lib/flowindex-sdk/rainbowkit";
+
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [
+        // Point to your running wallet instance
+        flowIndexWallet({ walletUrl: "http://localhost:3003/connect/popup" }),
+        // ... other wallets
+      ],
+    },
+  ],
+  { appName: "My App", projectId: "YOUR_WALLETCONNECT_PROJECT_ID" }
+);
+```
+
+**3. Use with wagmi config:**
+
+```typescript
+import { createConfig, http } from "@wagmi/core";
+import { flowTestnet, flowMainnet } from "@wagmi/core/chains";
+
+export const config = createConfig({
+  connectors,
+  chains: [flowTestnet, flowMainnet],
+  transports: {
+    [flowTestnet.id]: http(),
+    [flowMainnet.id]: http(),
+  },
+});
+```
+
+**How it works:**
+1. User clicks "Flow Dev Wallet" in RainbowKit → popup opens at `/connect/popup`
+2. User approves connection → popup sends address via `postMessage` and closes
+3. dApp calls `personal_sign` / `eth_sendTransaction` → popup re-opens for signing approval
+4. With auto-sign enabled, all approvals are automatic (popup opens and closes instantly)
 
 Supported EVM methods:
-- `eth_requestAccounts` — connect wallet
+- `eth_requestAccounts` — connect wallet (popup with approval UI)
 - `personal_sign` — sign messages
 - `eth_sendTransaction` — send transactions
 - `eth_signTypedData_v4` — sign typed data
@@ -139,16 +188,24 @@ EVM chain configuration:
 
 ## E2E Testing
 
-### Running wallet tests
+### Running all tests
 
 ```bash
-bun playwright test
+npx playwright test
 ```
 
-Tests are in the `e2e/` directory and use Playwright. The test suite covers:
-- Wallet creation (private key, seed phrase)
-- Wallet import
-- Settings page functionality
+The test suite (8 tests) covers:
+- **Wallet core** — create with private key, create with seed phrase, import, settings
+- **FCL dApp** — connect via URL params (auto-sign), connect with manual approval
+- **EVM dApp** — connect via URL params (auto-sign), connect with manual approval
+
+Tests expect three servers (auto-started by Playwright config, or reuse existing):
+
+| Server | Port | Project |
+|--------|------|---------|
+| Flow Dev Wallet | 3003 | This project |
+| FCL Harness dApp | 3002 | `fcl-next-harness` |
+| EVM Rainbow dApp | 3004 | `flow-evm-rainbow` |
 
 ### Using as a test wallet for your dApp
 
@@ -159,43 +216,82 @@ Flow Dev Wallet is designed to be used as an automated test wallet in your dApp'
 cd /path/to/flow-dev-wallet && bun run dev -p 3003
 ```
 
-**2. In your Playwright test:**
+**2. For FCL dApps — Playwright example:**
 ```javascript
 const { test, expect } = require('@playwright/test');
 
-test('dApp flow', async ({ context }) => {
+test('FCL dApp flow', async ({ context }) => {
   // Pre-configure wallet with a test key and auto-sign
   const walletPage = await context.newPage();
   await walletPage.goto(
     'http://localhost:3003?seed=<your-test-private-key>&network=testnet&autoSign=true'
   );
-  await walletPage.waitForTimeout(2000);
+  // Wait for wallet to configure from URL params
+  await walletPage.waitForFunction(() => {
+    const raw = localStorage.getItem('store');
+    return raw && JSON.parse(raw).keyInfo?.pk;
+  }, { timeout: 8000 });
 
-  // Now test your dApp — all wallet popups auto-approve
+  // Now test your dApp — all wallet popups auto-approve and auto-close
   const page = await context.newPage();
-  await page.goto('http://localhost:3002'); // your dApp
-  // ... connect, sign, transact — all automatic
+  await page.goto('http://localhost:3002'); // your FCL dApp
+  // ... fcl.authenticate(), fcl.mutate() — all automatic
 });
 ```
 
-**3. Or inject wallet state directly via localStorage:**
+**3. For EVM dApps (wagmi/RainbowKit) — Playwright example:**
 ```javascript
-const { injectTestWallet } = require('./e2e/helpers');
+test('EVM dApp flow', async ({ context }) => {
+  // Pre-configure wallet
+  const walletPage = await context.newPage();
+  await walletPage.goto(
+    'http://localhost:3003?seed=<your-test-private-key>&network=testnet&autoSign=true'
+  );
+  await walletPage.waitForFunction(() => {
+    const raw = localStorage.getItem('store');
+    return raw && JSON.parse(raw).keyInfo?.pk;
+  }, { timeout: 8000 });
 
-// After navigating to wallet page
-await injectTestWallet(page);
+  // Navigate to your EVM dApp
+  const page = await context.newPage();
+  await page.goto('http://localhost:3004');
+
+  // Click "Flow Dev Wallet" in RainbowKit to connect
+  // With auto-sign, the popup opens, approves, and closes automatically
+  // Signing requests (personal_sign, eth_sendTransaction) also auto-approve
+});
+```
+
+**4. Or inject wallet state directly via localStorage:**
+```javascript
+await page.goto('http://localhost:3003');
+await page.evaluate(() => {
+  localStorage.setItem('store', JSON.stringify({
+    address: '0x631e88ae7f1d7c20',
+    network: 'testnet',
+    autoSign: true,
+    keyInfo: {
+      type: 'PrivateKey',
+      pk: '<your-test-private-key>',
+      pubK: '<corresponding-public-key>',
+      keyIndex: 0,
+      signAlgo: 'ECDSA_secp256k1',
+      hashAlgo: 'SHA2_256',
+      evmAddress: '0x...',
+    },
+  }));
+});
 ```
 
 ### Auto-Sign Mode
 
 When enabled (via Settings page, URL param `?autoSign=true`, or localStorage), the wallet automatically approves:
-- FCL authentication (authn) — popup auto-closes
-- FCL transaction signing (authz) — popup auto-closes
-- FCL message signing (userSign) — popup auto-closes
-- EVM transaction signing (eth_sendTransaction)
-- EVM message signing (personal_sign, eth_signTypedData_v4)
-
-FCL popups auto-close after approval. The EVM popup stays open for ongoing RPC communication.
+- FCL authentication (authn) — popup auto-approves and auto-closes
+- FCL transaction signing (authz) — popup auto-approves and auto-closes
+- FCL message signing (userSign) — popup auto-approves and auto-closes
+- EVM connection (eth_requestAccounts) — popup auto-approves and auto-closes
+- EVM transaction signing (eth_sendTransaction) — popup auto-approves and auto-closes
+- EVM message signing (personal_sign, eth_signTypedData_v4) — popup auto-approves and auto-closes
 
 ## API Endpoints
 
@@ -220,15 +316,23 @@ pages/
   import/               # Wallet import (seed phrase, private key, JSON)
   api/                  # Server-side API routes
 components/
-  sign/SignCard.js       # Wallet creation UI (passkey, seed, private key)
+  sign/SignCard.js       # Wallet creation UI (passkey, seed, private key) + saved accounts
+  sign/ProgressBar.js    # Account creation progress with tx polling
   WalletCard.js          # Main wallet display card
   Connect.js             # Connection status component
+  token/                 # Token and NFT display components
+  activity/              # Transaction activity display
+  setting/               # Settings UI
 utils/
   passkey.js             # FLIP-264 WebAuthn passkey operations
   sign.js                # Unified signing (passkey + local key)
   evm.js                 # EVM address derivation and chain config
+  evmSigner.js           # EVM RPC handler (eth_sendTransaction, personal_sign, etc.)
+  keyManager.js          # Key generation and derivation service
+  accountManager.js      # Flow account creation service
   config.js              # FCL configuration helper
   flowindex.js           # FlowIndex API client (tokens, NFTs, balances)
+  crypto.js              # AES-GCM encryption for local key storage
   constants.js           # Key types, sign algorithms, hash algorithms
 e2e/                    # Playwright e2e tests
   helpers.js             # Test utilities and constants
@@ -240,9 +344,9 @@ e2e/                    # Playwright e2e tests
 ## Development
 
 ```bash
-bun run dev        # Start dev server (default port 3000, use -p 3003 for tests)
-bun run build      # Production build
-bun run start      # Start production server
-bun run lint       # Run ESLint
-bun playwright test  # Run e2e tests
+bun run dev            # Start dev server (default port 3000, use -p 3003 for tests)
+bun run build          # Production build
+bun run start          # Start production server
+bun run lint           # Run ESLint
+npx playwright test    # Run e2e tests (8 tests: wallet, FCL dApp, EVM dApp)
 ```
