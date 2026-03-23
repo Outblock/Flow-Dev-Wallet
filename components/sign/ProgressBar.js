@@ -11,10 +11,9 @@ import Router from "next/router";
 const ProgressBar = ({txId, network}) => {
   const {store, setStore} = useContext(StoreContext)
   const storeRef = useRef(store);
-  const [status, setStatus] = useState("pending"); // pending | sealed | error | timeout
+  const [status, setStatus] = useState("pending");
   const [error, setError] = useState(null);
 
-  // Keep ref in sync
   useEffect(() => { storeRef.current = store; }, [store]);
 
   const url = `https://${network === 'testnet' ? 'testnet.' : ''}flowindex.io/tx/${txId}`
@@ -56,47 +55,30 @@ const ProgressBar = ({txId, network}) => {
     console.log('txId ===>', txId);
 
     let cancelled = false;
-
-    // Poll transaction result directly via REST API (bypass FCL streaming bug)
-    const pollTx = async () => {
-      const accessNode = storeRef.current.rpcUrl || "https://rest-testnet.onflow.org";
-      const maxAttempts = 60; // 2 minutes at 2s intervals
-      for (let i = 0; i < maxAttempts; i++) {
-        if (cancelled) return;
-        try {
-          const resp = await fetch(`${accessNode}/v1/transaction_results/${txId}`);
-          if (resp.ok) {
-            const result = await resp.json();
-            console.log("tx poll result:", result.status, result);
-            if (result.status === "Sealed" || result.status === "Executed") {
-              // Parse events from REST API format
-              const events = (result.events || [])
-                .filter(e => e.type === "flow.AccountCreated")
-                .map(e => {
-                  try {
-                    const payload = JSON.parse(atob(e.payload));
-                    const address = payload.value?.fields?.[0]?.value?.value;
-                    return { type: e.type, data: { address } };
-                  } catch { return null; }
-                })
-                .filter(Boolean);
-              handleSealed({ events });
-              return;
-            }
-          }
-        } catch (err) {
-          console.warn("tx poll error:", err.message);
-        }
-        await new Promise(r => setTimeout(r, 2000));
-      }
+    const timeoutId = setTimeout(() => {
       if (!cancelled) {
         setStatus("timeout");
         setError("Transaction polling timed out. Check the explorer link.");
       }
-    };
+    }, 120000);
 
-    pollTx();
-    return () => { cancelled = true; };
+    fcl.tx(txId).onceSealed()
+      .then((result) => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          handleSealed(result);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          console.error("tx error:", err);
+          setStatus("error");
+          setError(err.message || "Failed to poll transaction");
+        }
+      });
+
+    return () => { cancelled = true; clearTimeout(timeoutId); };
   }, [txId]);
 
   return (
@@ -121,11 +103,9 @@ const ProgressBar = ({txId, network}) => {
         {(status === "error" || status === "timeout") && (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-red-400">{error}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={resetAndGoHome}>
-                Start Over
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={resetAndGoHome}>
+              Start Over
+            </Button>
           </div>
         )}
 
