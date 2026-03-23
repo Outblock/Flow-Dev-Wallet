@@ -12,7 +12,7 @@ const TokenItem = ({ tokenInfo }) => {
         <h1 className="text-1xl text-gray-300">{tokenInfo.name}</h1>
       </div>
       <div className="flex items-center gap-1 justify-end grow">
-        <h1 className="text-1xl font-mono text-gray-300">{parseFloat(fmtFlow(tokenInfo.balance)).toFixed(2)}</h1>
+        <h1 className="text-1xl font-mono text-gray-300">{tokenInfo.balance != null ? parseFloat(fmtFlow(tokenInfo.balance)).toFixed(2) : "0.00"}</h1>
         <h1 className="text-1xl text-gray-500 uppercase">{tokenInfo.symbol}</h1>
       </div>
     </div>

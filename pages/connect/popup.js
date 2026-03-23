@@ -5,6 +5,8 @@ import { StoreContext } from "../../contexts";
 import { useEffect, useState, useContext, useRef, useCallback } from "react";
 import { getEvmChain } from "../../utils/evm";
 import { handleEvmRpc } from "../../utils/evmSigner";
+import { FaCircleCheck } from "react-icons/fa6";
+import { RiGlobalLine } from "react-icons/ri";
 import styles from "../../styles/Home.module.css";
 import Head from "next/head";
 
@@ -12,9 +14,20 @@ const EVMPopup = () => {
   const { store } = useContext(StoreContext);
   const [pendingRequest, setPendingRequest] = useState(null);
   const [status, setStatus] = useState("idle");
+  // "connect" = waiting for user to approve connection
+  // "connected" = user approved, listening for RPC requests
+  // If opened with ?action=sign, skip connect phase (already connected)
+  const [phase, setPhase] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("action") === "sign") return "connected";
+    }
+    return "connect";
+  });
   const autoProcessed = useRef(new Set());
 
   const chain = getEvmChain(store.network);
+  const evmAddress = store.keyInfo?.evmAddress;
 
   const postToOpener = useCallback((type, data) => {
     const target = window.opener || window.parent;
@@ -22,22 +35,32 @@ const EVMPopup = () => {
     target.postMessage({ type, ...data }, "*");
   }, []);
 
-  // On mount, send ready/connected if account exists
+  // On mount, send ready. If already connected (action=sign), include address.
   useEffect(() => {
-    if (store.keyInfo?.evmAddress) {
-      postToOpener("flowindex_connected", {
-        address: store.keyInfo.evmAddress,
+    if (phase === "connected" && evmAddress) {
+      postToOpener("flowindex_ready", {
+        address: evmAddress,
+        chainId: chain.chainId,
+      });
+    } else {
+      postToOpener("flowindex_ready", {
+        address: null,
         chainId: chain.chainId,
       });
     }
-    postToOpener("flowindex_ready", {
-      address: store.keyInfo?.evmAddress || null,
-      chainId: chain.chainId,
-    });
-  }, [store.keyInfo?.evmAddress, chain.chainId, postToOpener]);
+  }, [chain.chainId, postToOpener]);
 
-  // Listen for RPC requests from dApp
+  // Auto-approve connection when autoSign is enabled
   useEffect(() => {
+    if (phase === "connect" && store.autoSign && evmAddress) {
+      onApproveConnect();
+    }
+  }, [phase, store.autoSign, evmAddress]);
+
+  // Listen for RPC requests from dApp (only after connected)
+  useEffect(() => {
+    if (phase !== "connected") return;
+
     const handler = (event) => {
       if (event.data?.type !== "flowindex_rpc_request") return;
       const { id, method, params } = event.data;
@@ -57,14 +80,28 @@ const EVMPopup = () => {
           setPendingRequest({ id, method, params });
         }
       } else {
-        // Read-only methods: proxy to RPC
         handleRpc(id, method, params);
       }
     };
 
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [store.autoSign, store.keyInfo?.pk, chain]);
+  }, [phase, store.autoSign, store.keyInfo?.pk, chain]);
+
+  const onApproveConnect = () => {
+    postToOpener("flowindex_connected", {
+      address: evmAddress,
+      chainId: chain.chainId,
+    });
+    setPhase("connected");
+    // Auto-close after connection — dApp will re-open for signing
+    setTimeout(() => window.close(), 300);
+  };
+
+  const onRejectConnect = () => {
+    postToOpener("flowindex_disconnected", {});
+    window.close();
+  };
 
   const handleRpc = async (id, method, params) => {
     setStatus("processing");
@@ -80,19 +117,21 @@ const EVMPopup = () => {
     }
     setPendingRequest(null);
     setStatus("idle");
+    // Close popup after signing completes — dApp will re-open if needed
+    setTimeout(() => window.close(), 300);
   };
 
   const executeRpc = async (method, params) => {
-    return handleEvmRpc(method, params, store.keyInfo.pk, store.network);
+    return handleEvmRpc(method, params, store.keyInfo, store.network);
   };
 
-  const onApprove = () => {
+  const onApproveRpc = () => {
     if (!pendingRequest) return;
     const { id, method, params } = pendingRequest;
     handleRpc(id, method, params);
   };
 
-  const onReject = () => {
+  const onRejectRpc = () => {
     if (!pendingRequest) return;
     postToOpener("flowindex_rpc_response", {
       id: pendingRequest.id,
@@ -101,13 +140,16 @@ const EVMPopup = () => {
     setPendingRequest(null);
   };
 
+  // Get the opener's origin for display
+  const dAppOrigin = typeof window !== "undefined"
+    ? (document.referrer ? new URL(document.referrer).hostname : "Unknown dApp")
+    : "Unknown dApp";
+
   // No account loaded
-  if (!store.keyInfo?.evmAddress) {
+  if (!evmAddress) {
     return (
       <div className={styles.container}>
-        <Head>
-          <title>Flow Dev Wallet - EVM</title>
-        </Head>
+        <Head><title>Flow Dev Wallet - EVM</title></Head>
         <main className={styles.main}>
           <Card className="w-80 border-zinc-800 bg-zinc-900/90">
             <CardContent className="flex flex-col items-center gap-4 p-8">
@@ -128,11 +170,80 @@ const EVMPopup = () => {
     );
   }
 
+  // Phase 1: Connection approval (like Flow authn)
+  if (phase === "connect") {
+    return (
+      <div className={styles.container}>
+        <Head><title>Flow Dev Wallet - EVM Connect</title></Head>
+        <main className={styles.main}>
+          <Card className="w-80 border-zinc-800 bg-zinc-900/90">
+            <CardContent className="flex flex-col gap-4 p-6">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-sm font-bold text-gray-500">Connecting to</h1>
+                <h1 className="text-xl font-bold text-gray-200">EVM dApp</h1>
+              </div>
+
+              <Card className="border-zinc-800 bg-zinc-800/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <RiGlobalLine className="text-lg text-blue-100" />
+                    <span className="text-sm text-blue-100">{dAppOrigin}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-zinc-800 bg-zinc-800/50">
+                <CardContent className="p-3">
+                  <p className="text-xs text-gray-500 uppercase mb-2">This App would like to</p>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <FaCircleCheck className="text-emerald-500 shrink-0" />
+                      <p className="text-sm">View your EVM wallet address</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FaCircleCheck className="text-emerald-500 shrink-0" />
+                      <p className="text-sm">Request approval for transactions</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-2">
+                <span className="text-xs text-gray-500">Account:</span>
+                <span className="text-xs font-mono text-gray-300 truncate">{evmAddress}</span>
+              </div>
+
+              <div className="flex gap-2">
+                <Badge variant="secondary" className="bg-zinc-800 text-gray-400 text-xs">{chain.name}</Badge>
+                <Badge variant="secondary" className="bg-zinc-800 text-gray-400 text-xs">Chain {chain.chainId}</Badge>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11 border-zinc-700 hover:bg-zinc-800"
+                  onClick={onRejectConnect}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={onApproveConnect}
+                >
+                  Connect
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  // Phase 2: Connected — handle RPC signing requests
   return (
     <div className={styles.container}>
-      <Head>
-        <title>Flow Dev Wallet - EVM</title>
-      </Head>
+      <Head><title>Flow Dev Wallet - EVM</title></Head>
       <main className={styles.main}>
         <div className="w-80 flex flex-col gap-4">
           {/* Connected status */}
@@ -144,9 +255,7 @@ const EVMPopup = () => {
               </div>
               <div className="bg-zinc-800 rounded-lg px-3 py-2">
                 <p className="text-xs text-gray-500 mb-1">Address</p>
-                <p className="text-xs font-mono text-gray-300 break-all">
-                  {store.keyInfo.evmAddress}
-                </p>
+                <p className="text-xs font-mono text-gray-300 break-all">{evmAddress}</p>
               </div>
               <div className="flex gap-2">
                 <Badge variant="secondary" className="bg-zinc-800 text-gray-300">{chain.name}</Badge>
@@ -165,9 +274,7 @@ const EVMPopup = () => {
                 <h3 className="text-sm font-bold text-gray-300">Signature Request</h3>
                 <div className="bg-zinc-800 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-500 mb-1">Method</p>
-                  <p className="text-sm font-mono text-gray-300">
-                    {pendingRequest.method}
-                  </p>
+                  <p className="text-sm font-mono text-gray-300">{pendingRequest.method}</p>
                 </div>
                 <div className="bg-zinc-800 rounded-lg px-3 py-2 max-h-32 overflow-auto">
                   <p className="text-xs text-gray-500 mb-1">Params</p>
@@ -179,13 +286,13 @@ const EVMPopup = () => {
                   <Button
                     variant="outline"
                     className="flex-1 h-10 border-zinc-700 hover:bg-zinc-800"
-                    onClick={onReject}
+                    onClick={onRejectRpc}
                   >
                     Reject
                   </Button>
                   <Button
                     className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={onApprove}
+                    onClick={onApproveRpc}
                   >
                     Approve
                   </Button>

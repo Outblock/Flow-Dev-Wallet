@@ -13,7 +13,7 @@ const login = (obj) => {
 }
 
 const loginWithPasskey = (obj) => {
-    if (isEnableBiometric()) {
+    if (isEnableBiometric() && (!obj.keyInfo?.type || obj.keyInfo.type === 'Passkey')) {
         const userInfo = {...obj}
         delete userInfo.keyInfo
         login(userInfo)

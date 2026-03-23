@@ -35,11 +35,11 @@ const WalletCard = ({ address }) => {
   ];
 
   return (
-    <div className="flex flex-col w-full h-[85vh] max-h-[700px]">
+    <Card className="flex flex-col w-full h-[85vh] max-h-[700px] border-zinc-800/60 bg-zinc-900/80 overflow-hidden">
       <SignOut isOpen={signOutOpen} onOpen={() => setSignOutOpen(true)} onOpenChange={setSignOutOpen} />
 
       {/* ═══ Header ═══ */}
-      <div className="flex flex-col gap-3 pb-3">
+      <div className="flex flex-col gap-3 p-4 pb-3">
         {/* Title row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ const WalletCard = ({ address }) => {
             <button
               key={label}
               onClick={() => toast("Coming Soon", { icon: "🚧" })}
-              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800/40 hover:bg-zinc-800/60 hover:border-zinc-700/40 transition-all text-zinc-400 hover:text-zinc-200"
+              className="flex flex-col items-center gap-1 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700/30 hover:bg-zinc-700/50 hover:border-zinc-600/40 transition-all text-zinc-400 hover:text-zinc-200"
             >
               <Icon className="h-4 w-4" />
               <span className="text-[10px] font-medium">{label}</span>
@@ -100,10 +100,10 @@ const WalletCard = ({ address }) => {
         </div>
       </div>
 
-      <Separator className="opacity-30" />
+      <Separator className="opacity-30 mx-4" />
 
       {/* ═══ Content — scrollable ═══ */}
-      <div className="flex-1 overflow-y-auto min-h-0 py-2">
+      <div className="flex-1 overflow-y-auto min-h-0 py-2 px-4">
         {activeTab === "tokens" && (
           <div className="flex flex-col gap-1">
             {evmAddress && (
@@ -139,7 +139,7 @@ const WalletCard = ({ address }) => {
       </div>
 
       {/* ═══ Bottom tab bar — fixed ═══ */}
-      <div className="pt-2 border-t border-zinc-800/40">
+      <div className="pt-2 pb-2 px-4 border-t border-zinc-800/40">
         <div className="grid grid-cols-4">
           {TAB_ITEMS.map(({ id, icon: Icon, label }) => (
             <button
@@ -157,7 +157,7 @@ const WalletCard = ({ address }) => {
           ))}
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

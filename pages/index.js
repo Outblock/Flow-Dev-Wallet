@@ -35,45 +35,41 @@ export default function Home() {
     const hasTxId = !!store.txId;
 
     return (
-      <div className="flex flex-col gap-3 w-full">
-        {/* Show EVM address immediately */}
-        {evmAddress && (
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px]">EVM</Badge>
-                  <code className="font-mono text-xs text-gray-300 truncate">{evmAddress}</code>
-                </div>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(evmAddress); }}
-                  className="text-gray-500 hover:text-gray-300 text-xs"
-                >
-                  Copy
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      <Card className="w-full border-zinc-800/60 bg-zinc-900/80 overflow-hidden">
+        <CardContent className="flex flex-col gap-4 p-5">
+          {/* Show EVM address immediately */}
+          {evmAddress && (
+            <div className="flex items-center gap-2 bg-zinc-800/50 rounded-lg px-3 py-2.5">
+              <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px] shrink-0">EVM</Badge>
+              <code className="font-mono text-[11px] text-zinc-400 truncate flex-1">{evmAddress}</code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(evmAddress); }}
+                className="text-zinc-600 hover:text-zinc-300 transition-colors shrink-0"
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
+          )}
 
-        {/* Flow address: loading or progress */}
-        {hasTxId ? (
-          <ProgressBar txId={store.txId} network={store.network} />
-        ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 p-6">
+          {/* Flow address: loading or progress */}
+          {hasTxId ? (
+            <ProgressBar txId={store.txId} network={store.network} />
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-4">
               <div className="flex items-center gap-3">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-[#00EF8B]" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
                 <p className="text-sm text-gray-400">Creating Flow account...</p>
               </div>
               <p className="text-xs text-gray-600">This may take a few seconds</p>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        {/* Reset button — only show after 10s of no txId */}
-        <ResetButton store={store} resetCreating={resetCreating} />
-      </div>
+          {/* Reset button — only show after delay */}
+          <ResetButton store={store} resetCreating={resetCreating} />
+        </CardContent>
+      </Card>
     );
   }
 

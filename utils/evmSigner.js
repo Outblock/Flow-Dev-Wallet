@@ -5,7 +5,18 @@ export async function createEvmAccount(pk) {
   return privateKeyToAccount(pk.startsWith("0x") ? pk : `0x${pk}`);
 }
 
-export async function handleEvmRpc(method, params, pk, network) {
+export async function createEvmAccountFromMnemonic(mnemonic, index = 0) {
+  const { mnemonicToAccount } = await import("viem/accounts");
+  return mnemonicToAccount(mnemonic, { addressIndex: index });
+}
+
+/**
+ * @param {string} method - RPC method
+ * @param {any[]} params - RPC params
+ * @param {object} keyInfo - Key info with pk, mnemonic, type, etc.
+ * @param {string} network - Network name
+ */
+export async function handleEvmRpc(method, params, keyInfo, network) {
   const { createWalletClient, createPublicClient, http } = await import("viem");
   const chain = getEvmChain(network);
 
@@ -16,7 +27,11 @@ export async function handleEvmRpc(method, params, pk, network) {
     rpcUrls: { default: { http: [chain.rpcUrl] } },
   };
 
-  const account = await createEvmAccount(pk);
+  // Seed phrase: derive EVM account from mnemonic (Ethereum BIP-44 path)
+  // Private key: use the key directly (same key for Flow and EVM)
+  const account = keyInfo.mnemonic
+    ? await createEvmAccountFromMnemonic(keyInfo.mnemonic)
+    : await createEvmAccount(keyInfo.pk);
 
   switch (method) {
     case "eth_sendTransaction": {

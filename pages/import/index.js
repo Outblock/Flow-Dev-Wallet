@@ -13,6 +13,7 @@ import ImportAddressModel from "./importAddressModal";
 import { KEY_TYPE } from "../../utils/constants";
 import Router from "next/router";
 import { login, set } from "../../account";
+import { saveKeyToList } from "../../components/sign/SignCard";
 import { motion, AnimatePresence } from "motion/react";
 
 const Import = () => {
@@ -42,6 +43,7 @@ const Import = () => {
     userInfo.keyInfo = account;
     setStore(userInfo);
     login(userInfo);
+    saveKeyToList(userInfo);
     Router.push("/");
   };
 

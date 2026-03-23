@@ -19,14 +19,67 @@ import {
   IoAddCircleOutline,
   IoDownloadOutline,
   IoArrowBackOutline,
+  IoTrashOutline,
 } from "react-icons/io5";
 import { FaListOl } from "react-icons/fa6";
+import { LuWallet } from "react-icons/lu";
 import Router from "next/router";
 import { login } from "../../account";
 import toast from "react-hot-toast";
 import { generatePrivateKey, generateMnemonic } from "../../utils/keyManager";
 import { createFlowAccount } from "../../utils/accountManager";
 import { motion, AnimatePresence } from "motion/react";
+import { KEY_TYPE } from "../../utils/constants";
+import { encrypt, decrypt } from "../../utils/crypto";
+
+const SAVED_KEYS_KEY = "saved_keys";
+
+function getSavedKeysRaw() {
+  try {
+    return JSON.parse(window.localStorage.getItem(SAVED_KEYS_KEY) || "[]");
+  } catch { return []; }
+}
+
+async function getSavedKeys() {
+  const entries = getSavedKeysRaw();
+  const results = [];
+  for (const entry of entries) {
+    try {
+      if (entry.encrypted) {
+        const plain = await decrypt(entry.encrypted);
+        results.push({ ...entry, storeData: JSON.parse(plain) });
+      } else if (entry.storeData) {
+        // Legacy unencrypted — migrate on next save
+        results.push(entry);
+      }
+    } catch {
+      // Skip corrupted entries
+    }
+  }
+  return results;
+}
+
+async function saveKeyToList(storeData) {
+  if (!storeData?.address) return;
+  const entries = getSavedKeysRaw();
+  const idx = entries.findIndex(k => k.address === storeData.address);
+  const encrypted = await encrypt(JSON.stringify(storeData));
+  const entry = {
+    address: storeData.address,
+    network: storeData.network,
+    keyType: storeData.keyInfo?.type || "Unknown",
+    evmAddress: storeData.keyInfo?.evmAddress,
+    encrypted,
+    savedAt: Date.now(),
+  };
+  if (idx >= 0) entries[idx] = entry; else entries.unshift(entry);
+  window.localStorage.setItem(SAVED_KEYS_KEY, JSON.stringify(entries));
+}
+
+function removeKeyFromList(address) {
+  const keys = getSavedKeysRaw().filter(k => k.address !== address);
+  window.localStorage.setItem(SAVED_KEYS_KEY, JSON.stringify(keys));
+}
 
 const SignCard = () => {
   const { store, setStore } = useContext(StoreContext);
@@ -37,6 +90,12 @@ const SignCard = () => {
   const [loading, setLoading] = useState(false);
   const [registerInfo, setRegisterInfo] = useState(null);
   const [loginInfo, setLoginInfo] = useState(null);
+  const [savedKeys, setSavedKeys] = useState([]);
+
+  // Load saved keys on mount
+  useEffect(() => {
+    getSavedKeys().then(setSavedKeys);
+  }, []);
 
   // Handle passkey login
   useEffect(() => {
@@ -47,6 +106,7 @@ const SignCard = () => {
       const user = { ...store, address: storedUser.address, id: loginInfo.credentialId, username: storedUser.username || getUsername(loginInfo.credentialId), keyInfo: { ...result, pubK: storedUser.keyInfo?.pubK } };
       setStore(user);
       login(user);
+      saveKeyToList(user);
     } else {
       toast.error("No stored account found. Please register first.");
     }
@@ -217,6 +277,66 @@ const SignCard = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Saved local keys */}
+        {savedKeys.length > 0 && (
+          <Card className="w-full border-zinc-800">
+            <CardContent className="flex flex-col gap-1 p-3">
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider px-2 py-1">Saved Accounts</p>
+              {savedKeys.map((entry) => (
+                <div key={entry.address} className="flex items-center gap-2 group">
+                  <Button
+                    className="bg-zinc-900/50 hover:bg-zinc-800 h-auto py-3 px-3 justify-start flex-1 min-w-0"
+                    variant="ghost"
+                    onClick={() => {
+                      const data = entry.storeData;
+                      setStore(data);
+                      login(data);
+                      toast.success("Signed in!");
+                    }}
+                  >
+                    <div className="flex items-center gap-3 w-full min-w-0">
+                      <div className="w-7 flex justify-center shrink-0">
+                        <LuWallet className="text-base text-zinc-400" />
+                      </div>
+                      <div className="flex flex-col items-start min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-gray-300 truncate">
+                            {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
+                          </span>
+                          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-zinc-800 text-zinc-400 border-zinc-700">
+                            {entry.keyType}
+                          </Badge>
+                          {entry.network && (
+                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-zinc-800 text-zinc-500 border-zinc-700">
+                              {entry.network}
+                            </Badge>
+                          )}
+                        </div>
+                        {entry.evmAddress && (
+                          <span className="font-mono text-[10px] text-zinc-600 truncate">
+                            EVM: {entry.evmAddress.slice(0, 6)}...{entry.evmAddress.slice(-4)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Button>
+                  <button
+                    className="p-2 text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      removeKeyFromList(entry.address);
+                      setSavedKeys(await getSavedKeys());
+                      toast.success("Removed");
+                    }}
+                  >
+                    <IoTrashOutline className="text-sm" />
+                  </button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </MotionWrap>
       </AnimatePresence>
     );
@@ -331,3 +451,4 @@ const SignCard = () => {
 };
 
 export default SignCard;
+export { saveKeyToList, getSavedKeys, removeKeyFromList };
