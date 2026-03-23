@@ -11,7 +11,7 @@
  */
 
 import { createConnector } from "wagmi"
-import { createFlowDevWalletProvider, type FlowDevWalletConfig } from "./provider"
+import { createFlowDevWalletProvider, type FlowDevWalletConfig } from "./provider.js"
 
 // Flow logo with dark background — matches the wallet's public/logo.svg
 const ICON_SVG = "data:image/svg+xml," + encodeURIComponent(

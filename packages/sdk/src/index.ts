@@ -1,2 +1,2 @@
-export { createFlowDevWalletProvider, type FlowDevWalletConfig, type FlowDevWalletProvider } from "./provider"
-export { announceFlowDevWallet } from "./announce"
+export { createFlowDevWalletProvider, type FlowDevWalletConfig, type FlowDevWalletProvider } from "./provider.js"
+export { announceFlowDevWallet } from "./announce.js"
