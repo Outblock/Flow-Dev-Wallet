@@ -478,6 +478,7 @@ export async function signUserOpWithPasskey(
 }
 
 function derToRS(der: Uint8Array): { r: bigint; s: bigint } {
+  const P256_N = BigInt("0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
   let offset = 2;
   if (der[offset] !== 0x02) throw new Error("Expected 0x02 tag for r");
   offset++;
@@ -488,7 +489,13 @@ function derToRS(der: Uint8Array): { r: bigint; s: bigint } {
   const sLen = der[offset]; offset++;
   const sBytes = der.slice(offset, offset + sLen);
   const toHexStr = (bytes: Uint8Array) => Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
-  return { r: BigInt("0x" + toHexStr(rBytes)), s: BigInt("0x" + toHexStr(sBytes)) };
+  const r = BigInt("0x" + toHexStr(rBytes));
+  let s = BigInt("0x" + toHexStr(sBytes));
+
+  // webauthn-sol rejects high-s signatures to prevent malleability.
+  if (s > P256_N / BigInt(2)) s = P256_N - s;
+
+  return { r, s };
 }
 
 function findChallengeIndex(clientDataJSON: string): number {
