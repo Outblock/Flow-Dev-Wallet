@@ -21,7 +21,8 @@ import {
 // ─── Constants ──────────────────────────────────────────────────────
 
 export const ENTRYPOINT_V07: Address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
-export const FACTORY_ADDRESS: Address = "0xAc396ed9a5E949C685C3799657E26fE1d6fFf7E7";
+export const FACTORY_ADDRESS: Address = "0x69d8889778D1baAE4D9D84ad13367cBA570e46e6";
+export const PAYMASTER_ADDRESS: Address = "0x78c7b2f6313a7615504b28197b80abb9c6696395";
 
 export const BUNDLER_URLS: Record<string, string> = {
   testnet: "https://bundler.flowindex.io",
