@@ -11,13 +11,13 @@ import type { Address, Hex } from "viem";
 
 // ─── Constants ──────────────────────────────────────────────────────
 export const BUNDLER_URLS: Record<string, string> = {
-  testnet: "https://testnet.evm.flowindex.io/bundler",
-  mainnet: "https://evm.flowindex.io/bundler",
+  testnet: "https://bundler.flowindex.io",
+  mainnet: "https://bundler.flowindex.io",
 };
 
 export const PAYMASTER_URLS: Record<string, string> = {
-  testnet: "https://testnet.evm.flowindex.io/paymaster",
-  mainnet: "https://evm.flowindex.io/paymaster",
+  testnet: "https://bundler.flowindex.io/paymaster",
+  mainnet: "https://bundler.flowindex.io/paymaster",
 };
 
 function getRpcUrl(network: string): string {
