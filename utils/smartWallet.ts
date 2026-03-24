@@ -491,17 +491,63 @@ function derToRS(der: Uint8Array): { r: bigint; s: bigint } {
   return { r: BigInt("0x" + toHexStr(rBytes)), s: BigInt("0x" + toHexStr(sBytes)) };
 }
 
+function findChallengeIndex(clientDataJSON: string): number {
+  const idx = clientDataJSON.indexOf('"challenge"');
+  if (idx === -1) throw new Error("challenge not found in clientDataJSON");
+  return idx;
+}
+
+function findTypeIndex(clientDataJSON: string): number {
+  const idx = clientDataJSON.indexOf('"type"');
+  if (idx === -1) throw new Error("type not found in clientDataJSON");
+  return idx;
+}
+
+function encodeSignatureWrapper(ownerIndex: bigint, signatureData: Hex): Hex {
+  return encodeAbiParameters(
+    [
+      {
+        type: "tuple",
+        components: [
+          { name: "ownerIndex", type: "uint256" },
+          { name: "signatureData", type: "bytes" },
+        ],
+      },
+    ],
+    [{ ownerIndex, signatureData }],
+  ) as Hex;
+}
+
 function encodeWebAuthnSignature(params: {
   ownerIndex: bigint; authenticatorData: Uint8Array; clientDataJSON: string; r: bigint; s: bigint;
 }): Hex {
   const { ownerIndex, authenticatorData, clientDataJSON, r, s } = params;
-  const challengeIdx = BigInt(clientDataJSON.indexOf('"challenge":"') + '"challenge":"'.length);
-  const typeIdx = BigInt(clientDataJSON.indexOf('"type":"') + '"type":"'.length);
+  const challengeIdx = BigInt(findChallengeIndex(clientDataJSON));
+  const typeIdx = BigInt(findTypeIndex(clientDataJSON));
   const sigData = encodeAbiParameters(
-    [{ type: "bytes" }, { type: "string" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }],
-    [toHex(authenticatorData), clientDataJSON, challengeIdx, typeIdx, r, s]
-  );
-  return encodeAbiParameters([{ type: "uint256" }, { type: "bytes" }], [ownerIndex, sigData]) as Hex;
+    [
+      {
+        type: "tuple",
+        components: [
+          { name: "authenticatorData", type: "bytes" },
+          { name: "clientDataJSON", type: "string" },
+          { name: "challengeIndex", type: "uint256" },
+          { name: "typeIndex", type: "uint256" },
+          { name: "r", type: "uint256" },
+          { name: "s", type: "uint256" },
+        ],
+      },
+    ],
+    [{
+      authenticatorData: toHex(authenticatorData),
+      clientDataJSON,
+      challengeIndex: challengeIdx,
+      typeIndex: typeIdx,
+      r,
+      s,
+    }]
+  ) as Hex;
+  return encodeSignatureWrapper(ownerIndex, sigData);
 }
 
 export async function signUserOpWithECDSA(
@@ -514,7 +560,7 @@ export async function signUserOpWithECDSA(
   const pk = (privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`) as Hex;
   const account = privateKeyToAccount(pk);
   const signature = await account.signMessage({ message: { raw: userOpHash } });
-  return encodeAbiParameters([{ type: "uint256" }, { type: "bytes" }], [BigInt(0), signature]) as Hex;
+  return encodeSignatureWrapper(BigInt(0), signature as Hex);
 }
 
 // ─── ERC-1271 Personal Sign (CoinbaseSmartWallet) ───────────────────

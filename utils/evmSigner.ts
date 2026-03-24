@@ -190,8 +190,19 @@ async function handleSmartWalletPersonalSignECDSA(
   const account = privateKeyToAccount(pk);
   const sig = await account.signMessage({ message: { raw: replaySafeHash } });
 
-  // Wrap in CoinbaseSmartWallet format: ownerIndex + signature
-  return encodeAbiParameters([{ type: "uint256" }, { type: "bytes" }], [BigInt(0), sig as `0x${string}`]);
+  // Wrap as CoinbaseSmartWallet.SignatureWrapper tuple
+  return encodeAbiParameters(
+    [
+      {
+        type: "tuple",
+        components: [
+          { name: "ownerIndex", type: "uint256" },
+          { name: "signatureData", type: "bytes" },
+        ],
+      },
+    ],
+    [{ ownerIndex: BigInt(0), signatureData: sig as `0x${string}` }],
+  );
 }
 
 /**
