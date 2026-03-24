@@ -21,9 +21,11 @@ interface PasskeyKeyInfo {
   type: typeof KEY_TYPE.PASSKEY;
   credentialId: string;
   pubK?: string;
+  publicKeySec1Hex?: string;
   keyIndex: number;
   signAlgo: typeof SIGN_ALGO.P256;
   hashAlgo: typeof HASH_ALGO.SHA256;
+  smartWalletAddress?: string;
 }
 
 /**
@@ -88,6 +90,7 @@ const getPKfromRegister = (registerResult: PasskeyCreateResult): PasskeyKeyInfo 
     type: KEY_TYPE.PASSKEY,
     credentialId: registerResult.credentialId,
     pubK: registerResult.pubK,
+    publicKeySec1Hex: registerResult.publicKeySec1Hex,
     keyIndex: 0,
     signAlgo: SIGN_ALGO.P256,
     hashAlgo: HASH_ALGO.SHA256,

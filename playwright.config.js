@@ -18,24 +18,12 @@ module.exports = defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: [
+  webServer: process.env.CI ? [
     {
       command: 'bun next dev -p 3003',
       url: 'http://localhost:3003',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 30000,
     },
-    {
-      command: 'cd /Users/hao/outblock/fcl-next-harness && bun next dev -p 3002',
-      url: 'http://localhost:3002',
-      reuseExistingServer: !process.env.CI,
-      timeout: 30000,
-    },
-    {
-      command: 'cd /Users/hao/outblock/flow-evm-rainbow && bun next dev -p 3004',
-      url: 'http://localhost:3004',
-      reuseExistingServer: !process.env.CI,
-      timeout: 30000,
-    },
-  ],
+  ] : [],
 });

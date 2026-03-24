@@ -21,6 +21,7 @@ const EVMPopup = () => {
   const { store } = useContext(StoreContext);
   const [pendingRequest, setPendingRequest] = useState<RpcRequest | null>(null);
   const [status, setStatus] = useState<string>("idle");
+  const [rpcError, setRpcError] = useState<string | null>(null);
   // "connect" = waiting for user to approve connection
   // "connected" = user approved, listening for RPC requests
   // If opened with ?action=sign, skip connect phase (already connected)
@@ -34,7 +35,9 @@ const EVMPopup = () => {
   const autoProcessed = useRef(new Set<string | number>());
 
   const chain = getEvmChain(store.network);
-  const evmAddress = store.keyInfo?.evmAddress;
+  // Prefer smart wallet address (4337) over EOA address
+  const evmAddress = store.keyInfo?.smartWalletAddress || store.keyInfo?.evmAddress;
+  const isSmartWallet = !!store.keyInfo?.smartWalletAddress;
   const dAppOrigin = typeof window !== "undefined"
     ? (document.referrer ? new URL(document.referrer).hostname : "localhost")
     : "localhost";
@@ -72,25 +75,31 @@ const EVMPopup = () => {
     if (phase !== "connected") return;
 
     const handler = (event: MessageEvent) => {
-      if (event.data?.type !== "flowindex_rpc_request") return;
-      const { id, method, params } = event.data;
-      console.log("[evm-popup] rpc request:", method, id);
+      try {
+        if (event.data?.type !== "flowindex_rpc_request") return;
+        const { id, method, params } = event.data;
+        console.log("[evm-popup] rpc request:", method, id);
 
-      const signingMethods = [
-        "eth_sendTransaction",
-        "personal_sign",
-        "eth_signTypedData_v4",
-      ];
+        const signingMethods = [
+          "eth_sendTransaction",
+          "personal_sign",
+          "eth_signTypedData_v4",
+        ];
 
-      if (signingMethods.includes(method)) {
-        if (shouldAutoSign(store, dAppOrigin) && !autoProcessed.current.has(id)) {
-          autoProcessed.current.add(id);
-          handleRpc(id, method, params);
+        if (signingMethods.includes(method)) {
+          if (shouldAutoSign(store, dAppOrigin) && !autoProcessed.current.has(id)) {
+            autoProcessed.current.add(id);
+            handleRpc(id, method, params);
+          } else {
+            setPendingRequest({ id, method, params });
+          }
         } else {
-          setPendingRequest({ id, method, params });
+          handleRpc(id, method, params);
         }
-      } else {
-        handleRpc(id, method, params);
+      } catch (err: any) {
+        console.error("[evm-popup] handler error:", err);
+        setStatus("error");
+        setRpcError(err.message || "Unknown error in message handler");
       }
     };
 
@@ -115,20 +124,30 @@ const EVMPopup = () => {
 
   const handleRpc = async (id: string | number, method: string, params: any[]) => {
     setStatus("processing");
+    let success = false;
     try {
       const result = await executeRpc(method, params);
       postToOpener("flowindex_rpc_response", { id, result });
+      success = true;
     } catch (err: any) {
       console.error("[evm-popup] rpc error:", err);
+      const errorMsg = [
+        `Method: ${method}`,
+        `Error: ${err.message || "Internal error"}`,
+        err.shortMessage ? `Detail: ${err.shortMessage}` : "",
+      ].filter(Boolean).join("\n");
+      setStatus("error");
+      setRpcError(errorMsg);
       postToOpener("flowindex_rpc_response", {
         id,
         error: { code: err.code || -32603, message: err.message || "Internal error" },
       });
     }
     setPendingRequest(null);
-    setStatus("idle");
-    // Close popup after signing completes — dApp will re-open if needed
-    setTimeout(() => window.close(), 300);
+    if (success) {
+      setStatus("idle");
+      setTimeout(() => window.close(), 300);
+    }
   };
 
   const executeRpc = async (method: string, params: any[]) => {
@@ -314,6 +333,30 @@ const EVMPopup = () => {
               <CardContent className="flex flex-row items-center justify-center gap-3 p-4">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
                 <span className="text-sm text-gray-400">Processing request...</span>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Error state */}
+          {status === "error" && rpcError && (
+            <Card className="border-red-500/30 bg-zinc-900/90">
+              <CardContent className="flex flex-col gap-3 p-4">
+                <p className="text-sm font-semibold text-red-400">Signing Error</p>
+                <pre className="text-xs text-red-300 bg-zinc-800 rounded-lg p-3 whitespace-pre-wrap break-all max-h-60 overflow-auto">{rpcError}</pre>
+                <div className="flex flex-col gap-2 text-xs text-gray-500 bg-zinc-800/50 rounded-lg p-2">
+                  <p>Wallet: {evmAddress}</p>
+                  <p>Smart Wallet: {store.keyInfo?.smartWalletAddress || "N/A"}</p>
+                  <p>Key Type: {store.keyInfo?.type || "unknown"}</p>
+                  <p>Network: {store.network} (Chain {chain.chainId})</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-zinc-700"
+                  onClick={() => { setStatus("idle"); setRpcError(null); }}
+                >
+                  Dismiss
+                </Button>
               </CardContent>
             </Card>
           )}

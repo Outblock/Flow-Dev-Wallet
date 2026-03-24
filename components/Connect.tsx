@@ -16,7 +16,7 @@ import { encode } from "@onflow/rlp"
 import { signWithKey } from "../utils/sign";
 
 interface ConnectProps {
-  address: string;
+  address?: string;
 }
 
 interface AuthnInfo {

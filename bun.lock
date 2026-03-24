@@ -5,6 +5,7 @@
     "": {
       "name": "flow-dev-wallet",
       "dependencies": {
+        "@flowindex/evm-wallet": "^0.1.0",
         "@flowindex/flow-passkey": "latest",
         "@flowindex/flow-signer": "latest",
         "@onflow/fcl": "^1.21.9",
@@ -106,6 +107,8 @@
     "@floating-ui/react-dom": ["@floating-ui/react-dom@2.1.8", "", { "dependencies": { "@floating-ui/dom": "^1.7.6" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-cC52bHwM/n/CxS87FH0yWdngEZrjdtLW/qVruo68qg+prK7ZQ4YGdut2GyDVpoGeAYe/h899rVeOVm6Oi40k2A=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
+
+    "@flowindex/evm-wallet": ["@flowindex/evm-wallet@0.1.0", "", { "dependencies": { "viem": "^2.25.0" }, "peerDependencies": { "@walletconnect/core": "^2.18.0", "@walletconnect/web3wallet": "^1.17.0" }, "optionalPeers": ["@walletconnect/core", "@walletconnect/web3wallet"] }, "sha512-CamP5OaA8P/yuX92MQYxp2qiQ7SxPE6OE1gOfECm75BBlw1p9M7pfPXxTfkHRn7zg4JfWKPwIq2dV3iTOpXvdw=="],
 
     "@flowindex/flow-passkey": ["@flowindex/flow-passkey@0.1.0", "", { "dependencies": { "@onflow/rlp": "^1.2.2", "sha3": "^2.1.4" }, "peerDependencies": { "@onflow/fcl": ">=1.0.0" }, "optionalPeers": ["@onflow/fcl"] }, "sha512-Tsh6EDhOqiLztNyYasg81OX/1zYaicM6+CDomVQCr/5mFkwX1mCdP/w3wTPhAz9Z33fz7NjvgtmtzutjlUkE6w=="],
 

@@ -25,7 +25,7 @@ const TokenList = () => {
     return <p className="text-sm text-red-400">Failed to load tokens</p>;
   }
 
-  const tokenList = tokens?.data || (Array.isArray(tokens) ? tokens : []);
+  const tokenList = (tokens as any)?.data || (Array.isArray(tokens) ? tokens : []);
 
   return (
     <div role="listbox" aria-label="Token list" className="flex flex-col">

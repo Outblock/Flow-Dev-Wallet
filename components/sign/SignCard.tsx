@@ -95,10 +95,31 @@ function removeKeyFromList(address: string): void {
 type Mode = null | 'create' | 'passkey-signin';
 type CreateType = null | 'passkey' | 'privateKey';
 
+const COLORS = ["Red", "Blue", "Green", "Purple", "Orange", "Pink", "Cyan", "Gold", "Silver", "Coral", "Teal", "Lime", "Mint", "Amber", "Jade"];
+const ANIMALS = ["Fox", "Wolf", "Bear", "Eagle", "Hawk", "Tiger", "Lion", "Panda", "Otter", "Raven", "Falcon", "Lynx", "Cobra", "Dolphin", "Owl"];
+
+function generateRandomName(): string {
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  return `${color} ${animal}`;
+}
+
+const MotionWrap = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -12 }}
+    transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+    className="flex flex-col gap-3 w-full"
+  >
+    {children}
+  </motion.div>
+);
+
 const SignCard = () => {
   const { store, setStore } = useContext(StoreContext);
   const [mode, setMode] = useState<Mode>(null);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() => generateRandomName());
   const [createType, setCreateType] = useState<CreateType>(null);
   const [generatedKey, setGeneratedKey] = useState<{ pk: string; pubK: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -130,8 +151,22 @@ const SignCard = () => {
   useEffect(() => {
     if (!registerInfo || !registerInfo.credentialId) return;
     const result = getPKfromRegister(registerInfo);
-    setStore((s: any) => ({ ...s, keyInfo: result, id: registerInfo.credentialId, username, isCreating: true }));
-    doCreateAccount(result.pubK);
+
+    // Derive smart wallet address for passkey (async)
+    (async () => {
+      try {
+        const { getSmartWalletAddress } = await import("../../utils/smartWallet");
+        const smartWalletAddress = await getSmartWalletAddress(
+          registerInfo.publicKeySec1Hex,
+          store.network || "testnet"
+        );
+        result.smartWalletAddress = smartWalletAddress;
+      } catch (e) {
+        console.warn("[passkey] Could not derive smart wallet address:", e);
+      }
+      setStore((s: any) => ({ ...s, keyInfo: result, id: registerInfo.credentialId, username, isCreating: true }));
+      doCreateAccount(result.pubK);
+    })();
   }, [registerInfo]);
 
   const doCreateAccount = async (pubK: string, signatureAlgorithm = "ECDSA_P256", hashAlgorithm = "SHA2_256") => {
@@ -212,18 +247,6 @@ const SignCard = () => {
   };
 
   const modeKey = !mode ? "home" : mode === "create" && !createType ? "create" : mode === "create" && createType === "passkey" ? "passkey" : "home";
-
-  const MotionWrap = ({ children }: { children: React.ReactNode }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="flex flex-col gap-3 w-full"
-    >
-      {children}
-    </motion.div>
-  );
 
   // === Main selector ===
   if (!mode) {
@@ -433,20 +456,33 @@ const SignCard = () => {
             <BackButton onClick={() => setCreateType(null)} />
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-400">Username</label>
-              <Input
-                type="text"
-                placeholder="Choose a name for your passkey"
-                value={username}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-700"
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Choose a name for your passkey"
+                  value={username}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-700 flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 border-zinc-700 shrink-0"
+                  onClick={() => setUsername(generateRandomName())}
+                  title="Random name"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </Button>
+              </div>
             </div>
             <Button
               className="bg-[#00EF8B] text-black hover:bg-[#00d67d] font-semibold"
               disabled={!username.trim()}
               onClick={async () => {
                 try {
-                  setRegisterInfo(await createPasskey(username, username));
+                  setRegisterInfo(await createPasskey(username));
                 } catch (e) {
                   toast.error("Passkey registration failed");
                 }

@@ -59,7 +59,7 @@ const Setting = () => {
               onCheckedChange={(checked: boolean) => {
                 console.log("onCheckedChange ==>", enableBiometric);
                 setEnableBiometric(checked);
-                set(KEYS.BIOMETRIC, checked);
+                set(KEYS.BIOMETRIC, String(checked));
                 handleKeyInfo(checked);
               }}
             />
