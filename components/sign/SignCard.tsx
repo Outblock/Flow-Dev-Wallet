@@ -95,10 +95,31 @@ function removeKeyFromList(address: string): void {
 type Mode = null | 'create' | 'passkey-signin';
 type CreateType = null | 'passkey' | 'privateKey';
 
+const COLORS = ["Red", "Blue", "Green", "Purple", "Orange", "Pink", "Cyan", "Gold", "Silver", "Coral", "Teal", "Lime", "Mint", "Amber", "Jade"];
+const ANIMALS = ["Fox", "Wolf", "Bear", "Eagle", "Hawk", "Tiger", "Lion", "Panda", "Otter", "Raven", "Falcon", "Lynx", "Cobra", "Dolphin", "Owl"];
+
+function generateRandomName(): string {
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  return `${color} ${animal}`;
+}
+
+const MotionWrap = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -12 }}
+    transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+    className="flex flex-col gap-3 w-full"
+  >
+    {children}
+  </motion.div>
+);
+
 const SignCard = () => {
   const { store, setStore } = useContext(StoreContext);
   const [mode, setMode] = useState<Mode>(null);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() => generateRandomName());
   const [createType, setCreateType] = useState<CreateType>(null);
   const [generatedKey, setGeneratedKey] = useState<{ pk: string; pubK: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -226,18 +247,6 @@ const SignCard = () => {
   };
 
   const modeKey = !mode ? "home" : mode === "create" && !createType ? "create" : mode === "create" && createType === "passkey" ? "passkey" : "home";
-
-  const MotionWrap = ({ children }: { children: React.ReactNode }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="flex flex-col gap-3 w-full"
-    >
-      {children}
-    </motion.div>
-  );
 
   // === Main selector ===
   if (!mode) {
