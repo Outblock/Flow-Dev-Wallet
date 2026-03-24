@@ -25,13 +25,13 @@ export const FACTORY_ADDRESS: Address = "0x69d8889778D1baAE4D9D84ad13367cBA570e4
 export const PAYMASTER_ADDRESS: Address = "0x78c7b2f6313a7615504b28197b80abb9c6696395";
 
 export const BUNDLER_URLS: Record<string, string> = {
-  testnet: "https://bundler.flowindex.io",
-  mainnet: "https://bundler.flowindex.io",
+  testnet: "https://bundler.flowindex.io/545/rpc",
+  mainnet: "https://bundler.flowindex.io/747/rpc",
 };
 
 export const PAYMASTER_URLS: Record<string, string> = {
-  testnet: "https://bundler.flowindex.io/paymaster",
-  mainnet: "https://bundler.flowindex.io/paymaster",
+  testnet: "https://bundler.flowindex.io/545/paymaster",
+  mainnet: "https://bundler.flowindex.io/747/paymaster",
 };
 
 const FACTORY_ABI = [
