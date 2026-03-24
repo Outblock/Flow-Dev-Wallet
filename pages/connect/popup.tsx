@@ -21,6 +21,7 @@ const EVMPopup = () => {
   const { store } = useContext(StoreContext);
   const [pendingRequest, setPendingRequest] = useState<RpcRequest | null>(null);
   const [status, setStatus] = useState<string>("idle");
+  const [rpcError, setRpcError] = useState<string | null>(null);
   // "connect" = waiting for user to approve connection
   // "connected" = user approved, listening for RPC requests
   // If opened with ?action=sign, skip connect phase (already connected)
@@ -117,20 +118,25 @@ const EVMPopup = () => {
 
   const handleRpc = async (id: string | number, method: string, params: any[]) => {
     setStatus("processing");
+    let success = false;
     try {
       const result = await executeRpc(method, params);
       postToOpener("flowindex_rpc_response", { id, result });
+      success = true;
     } catch (err: any) {
       console.error("[evm-popup] rpc error:", err);
+      setStatus("error");
+      setRpcError(err.message || "Internal error");
       postToOpener("flowindex_rpc_response", {
         id,
         error: { code: err.code || -32603, message: err.message || "Internal error" },
       });
     }
     setPendingRequest(null);
-    setStatus("idle");
-    // Close popup after signing completes — dApp will re-open if needed
-    setTimeout(() => window.close(), 300);
+    if (success) {
+      setStatus("idle");
+      setTimeout(() => window.close(), 300);
+    }
   };
 
   const executeRpc = async (method: string, params: any[]) => {
@@ -316,6 +322,24 @@ const EVMPopup = () => {
               <CardContent className="flex flex-row items-center justify-center gap-3 p-4">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
                 <span className="text-sm text-gray-400">Processing request...</span>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Error state */}
+          {status === "error" && rpcError && (
+            <Card className="border-red-500/30 bg-zinc-900/90">
+              <CardContent className="flex flex-col gap-3 p-4">
+                <p className="text-sm font-semibold text-red-400">Signing Error</p>
+                <pre className="text-xs text-red-300 bg-zinc-800 rounded-lg p-3 whitespace-pre-wrap break-all max-h-40 overflow-auto">{rpcError}</pre>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-zinc-700"
+                  onClick={() => { setStatus("idle"); setRpcError(null); }}
+                >
+                  Dismiss
+                </Button>
               </CardContent>
             </Card>
           )}
