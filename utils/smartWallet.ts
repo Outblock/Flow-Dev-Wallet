@@ -259,6 +259,38 @@ function toBundlerRpcUserOp(userOp: any): any {
   return rpcUserOp;
 }
 
+async function requestPaymasterAndData(
+  pmUrl: string | undefined,
+  userOp: {
+    sender: Address;
+    nonce: Hex;
+    initCode: Hex;
+    callData: Hex;
+    accountGasLimits: Hex;
+    preVerificationGas: Hex;
+    gasFees: Hex;
+    signature: Hex;
+  }
+): Promise<Hex> {
+  if (!pmUrl) return "0x";
+
+  try {
+    const pmFetchUrl = typeof window !== "undefined"
+      ? `/api/bundler?url=${encodeURIComponent(pmUrl)}`
+      : pmUrl;
+    const pmRes = await fetch(pmFetchUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userOp: { ...userOp, paymasterAndData: "0x" } }),
+    });
+    const pmData = await pmRes.json();
+    return (pmData.paymasterAndData || "0x") as Hex;
+  } catch (e) {
+    console.warn("[smartWallet] paymaster error:", e);
+    return "0x";
+  }
+}
+
 export function computeUserOpHash(
   userOp: any,
   entryPoint: Address,
@@ -381,55 +413,59 @@ export async function buildSmartWalletUserOp(
   const block = await client.getBlock();
   const baseFee = block.baseFeePerGas ?? BigInt(1);
   const maxFeePerGas = baseFee * BigInt(2) > BigInt(1000000) ? baseFee * BigInt(2) : BigInt(1000000);
+  const initialAccountGasLimits = packGasLimits(BigInt(500000), BigInt(500000));
+  const initialPreVerificationGas = toHex(BigInt(100000));
+  const gasFees = packGasFees(BigInt(0), maxFeePerGas);
 
-  // Step 1: Get paymasterAndData FIRST (paymaster expects packed v0.7 format)
-  let paymasterAndData: Hex = "0x";
   const pmUrl = opts.paymasterUrl || PAYMASTER_URLS[network];
-  if (pmUrl) {
-    try {
-      const pmFetchUrl = typeof window !== "undefined"
-        ? `/api/bundler?url=${encodeURIComponent(pmUrl)}`
-        : pmUrl;
-      const pmUserOp = {
-        sender, nonce: toHex(nonce), initCode, callData,
-        accountGasLimits: packGasLimits(BigInt(500000), BigInt(500000)),
-        preVerificationGas: toHex(BigInt(100000)),
-        gasFees: packGasFees(BigInt(0), maxFeePerGas),
-        paymasterAndData: "0x",
-        signature: dummySig,
-      };
-      const pmRes = await fetch(pmFetchUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userOp: pmUserOp }),
-      });
-      const pmData = await pmRes.json();
-      if (pmData.paymasterAndData) paymasterAndData = pmData.paymasterAndData;
-    } catch (e) {
-      console.warn("[smartWallet] paymaster error:", e);
-    }
-  }
+  const preliminaryPaymasterAndData = await requestPaymasterAndData(pmUrl, {
+    sender,
+    nonce: toHex(nonce),
+    initCode,
+    callData,
+    accountGasLimits: initialAccountGasLimits,
+    preVerificationGas: initialPreVerificationGas,
+    gasFees,
+    signature: dummySig,
+  });
 
-  // Step 2: Estimate gas WITH paymasterAndData (bundler expects unpacked fields)
+  // Step 1: Estimate gas with preliminary paymaster data.
   const gasEstimate = await bundlerClient.estimateUserOperationGas({
     sender, nonce: toHex(nonce), initCode, callData, signature: dummySig,
-    paymasterAndData,
+    paymasterAndData: preliminaryPaymasterAndData,
     callGasLimit: toHex(BigInt(500000)),
     verificationGasLimit: toHex(BigInt(500000)),
-    preVerificationGas: toHex(BigInt(100000)),
+    preVerificationGas: initialPreVerificationGas,
     maxFeePerGas: toHex(maxFeePerGas),
     maxPriorityFeePerGas: toHex(BigInt(0)),
   }, ENTRYPOINT_V07);
 
-  // Step 3: Build final UserOp with estimated gas
+  // Step 2: Request final paymaster signature over the final gas values.
+  const finalAccountGasLimits = packGasLimits(
+    BigInt(gasEstimate.verificationGasLimit),
+    BigInt(gasEstimate.callGasLimit),
+  );
+  const finalPreVerificationGas = gasEstimate.preVerificationGas as Hex;
+  const finalPaymasterAndData = await requestPaymasterAndData(pmUrl, {
+    sender,
+    nonce: toHex(nonce),
+    initCode,
+    callData,
+    accountGasLimits: finalAccountGasLimits,
+    preVerificationGas: finalPreVerificationGas,
+    gasFees,
+    signature: dummySig,
+  });
+
+  // Step 3: Build final UserOp with estimated gas and final paymaster data.
   const result: any = {
     sender, nonce: toHex(nonce), initCode, callData,
     callGasLimit: toHex(BigInt(gasEstimate.callGasLimit)),
     verificationGasLimit: toHex(BigInt(gasEstimate.verificationGasLimit)),
-    preVerificationGas: gasEstimate.preVerificationGas,
+    preVerificationGas: finalPreVerificationGas,
     maxFeePerGas: toHex(maxFeePerGas),
     maxPriorityFeePerGas: toHex(BigInt(0)),
-    paymasterAndData,
+    paymasterAndData: finalPaymasterAndData,
     signature: "0x" as Hex,
   };
 
@@ -749,55 +785,59 @@ export async function deploySmartWallet(
   const block = await client.getBlock();
   const baseFee = block.baseFeePerGas ?? BigInt(1);
   const maxFeePerGas = baseFee * BigInt(2) > BigInt(1000000) ? baseFee * BigInt(2) : BigInt(1000000);
+  const initialAccountGasLimits = packGasLimits(BigInt(500000), BigInt(500000));
+  const initialPreVerificationGas = toHex(BigInt(100000));
+  const gasFees = packGasFees(BigInt(0), maxFeePerGas);
 
-  // Step 1: Get paymasterAndData FIRST (paymaster expects packed v0.7 format)
-  let paymasterAndData: Hex = "0x";
   const pmUrl = PAYMASTER_URLS[network];
-  if (pmUrl) {
-    try {
-      const pmFetchUrl = typeof window !== "undefined"
-        ? `/api/bundler?url=${encodeURIComponent(pmUrl)}`
-        : pmUrl;
-      const pmUserOp = {
-        sender, nonce: toHex(nonce as bigint), initCode, callData,
-        accountGasLimits: packGasLimits(BigInt(500000), BigInt(500000)),
-        preVerificationGas: toHex(BigInt(100000)),
-        gasFees: packGasFees(BigInt(0), maxFeePerGas),
-        paymasterAndData: "0x",
-        signature: dummySig,
-      };
-      const pmRes = await fetch(pmFetchUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userOp: pmUserOp }),
-      });
-      const pmData = await pmRes.json();
-      if (pmData.paymasterAndData) paymasterAndData = pmData.paymasterAndData;
-    } catch (e) {
-      console.warn("[smartWallet] paymaster error:", e);
-    }
-  }
+  const preliminaryPaymasterAndData = await requestPaymasterAndData(pmUrl, {
+    sender,
+    nonce: toHex(nonce as bigint),
+    initCode,
+    callData,
+    accountGasLimits: initialAccountGasLimits,
+    preVerificationGas: initialPreVerificationGas,
+    gasFees,
+    signature: dummySig,
+  });
 
-  // Step 2: Estimate gas WITH paymasterAndData
+  // Step 1: Estimate gas with preliminary paymaster data.
   const gasEstimate = await bundlerClient.estimateUserOperationGas({
     sender, nonce: toHex(nonce as bigint), initCode, callData, signature: dummySig,
-    paymasterAndData,
+    paymasterAndData: preliminaryPaymasterAndData,
     callGasLimit: toHex(BigInt(500000)),
     verificationGasLimit: toHex(BigInt(500000)),
-    preVerificationGas: toHex(BigInt(100000)),
+    preVerificationGas: initialPreVerificationGas,
     maxFeePerGas: toHex(maxFeePerGas),
     maxPriorityFeePerGas: toHex(BigInt(0)),
   }, ENTRYPOINT_V07);
 
-  // Step 3: Build final UserOp
+  // Step 2: Request final paymaster signature over the final gas values.
+  const finalAccountGasLimits = packGasLimits(
+    BigInt(gasEstimate.verificationGasLimit),
+    BigInt(gasEstimate.callGasLimit),
+  );
+  const finalPreVerificationGas = gasEstimate.preVerificationGas as Hex;
+  const finalPaymasterAndData = await requestPaymasterAndData(pmUrl, {
+    sender,
+    nonce: toHex(nonce as bigint),
+    initCode,
+    callData,
+    accountGasLimits: finalAccountGasLimits,
+    preVerificationGas: finalPreVerificationGas,
+    gasFees,
+    signature: dummySig,
+  });
+
+  // Step 3: Build final UserOp.
   const userOp: any = {
     sender, nonce: toHex(nonce as bigint), initCode, callData,
     callGasLimit: toHex(BigInt(gasEstimate.callGasLimit)),
     verificationGasLimit: toHex(BigInt(gasEstimate.verificationGasLimit)),
-    preVerificationGas: gasEstimate.preVerificationGas,
+    preVerificationGas: finalPreVerificationGas,
     maxFeePerGas: toHex(maxFeePerGas),
     maxPriorityFeePerGas: toHex(BigInt(0)),
-    paymasterAndData,
+    paymasterAndData: finalPaymasterAndData,
     signature: "0x" as Hex,
   };
 
