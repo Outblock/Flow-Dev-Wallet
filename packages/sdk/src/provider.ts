@@ -21,6 +21,11 @@ interface PendingRequest {
   reject: (error: any) => void
 }
 
+interface PersistedSession {
+  connectedAddress: string
+  chainId: number | null
+}
+
 const SIGNING_METHODS = new Set([
   "eth_sendTransaction",
   "eth_signTransaction",
@@ -38,18 +43,43 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
   } = config
 
   let popup: Window | null = null
-  let connectedAddress: string | null = null
-  let chainId: number | null = null
+  const storageKey = getSessionStorageKey(walletUrl)
+  const initialSession = readPersistedSession(storageKey)
+  let connectedAddress: string | null = initialSession?.connectedAddress ?? null
+  let chainId: number | null = initialSession?.chainId ?? null
   let popupReady = false
   let requestId = 0
   const pending = new Map<number, PendingRequest>()
   const listeners = new Map<EventName, Set<Handler>>()
+  let connectWaiters: Array<{ resolve: (accounts: string[]) => void; reject: (error: Error) => void }> = []
 
   function emit(event: EventName, ...args: any[]) {
     listeners.get(event)?.forEach((fn) => fn(...args))
   }
 
   let readyResolvers: Array<() => void> = []
+
+  function persistSession() {
+    if (typeof window === "undefined") return
+    if (!connectedAddress) {
+      window.localStorage.removeItem(storageKey)
+      return
+    }
+    const session: PersistedSession = { connectedAddress, chainId }
+    window.localStorage.setItem(storageKey, JSON.stringify(session))
+  }
+
+  function resolveConnectWaiters(accounts: string[]) {
+    const waiters = connectWaiters
+    connectWaiters = []
+    waiters.forEach(({ resolve }) => resolve(accounts))
+  }
+
+  function rejectConnectWaiters(error: Error) {
+    const waiters = connectWaiters
+    connectWaiters = []
+    waiters.forEach(({ reject }) => reject(error))
+  }
 
   function onMessage(event: MessageEvent) {
     const { data } = event
@@ -60,6 +90,7 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
       if (data.address) {
         connectedAddress = data.address
         chainId = data.chainId
+        persistSession()
       }
       const resolvers = readyResolvers
       readyResolvers = []
@@ -67,11 +98,14 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
     }
 
     if (data.type === "flowindex_connected") {
-      connectedAddress = data.address
+      const address = data.address as string
+      connectedAddress = address
       chainId = data.chainId
       popupReady = true
+      persistSession()
       emit("connect", { chainId: `0x${chainId!.toString(16)}` })
-      emit("accountsChanged", [connectedAddress])
+      emit("accountsChanged", [address])
+      resolveConnectWaiters([address])
       const resolvers = readyResolvers
       readyResolvers = []
       resolvers.forEach((r) => r())
@@ -81,6 +115,8 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
       connectedAddress = null
       chainId = null
       popupReady = false
+      persistSession()
+      rejectConnectWaiters(new Error("User rejected connection"))
       emit("disconnect", { code: 4900, message: "Disconnected" })
       emit("accountsChanged", [])
     }
@@ -144,26 +180,25 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
       if (method === "eth_requestAccounts") {
         if (connectedAddress) return [connectedAddress]
 
-        openPopup()
-
         return new Promise<string[]>((resolve, reject) => {
+          const waiter = {
+            resolve: (accounts: string[]) => {
+              clearTimeout(timeout)
+              resolve(accounts)
+            },
+            reject: (error: Error) => {
+              clearTimeout(timeout)
+              reject(error)
+            },
+          }
           const timeout = setTimeout(() => {
+            connectWaiters = connectWaiters.filter((candidate) => candidate !== waiter)
             reject(new Error("Connection timed out"))
           }, 120_000)
 
-          const handler = (event: MessageEvent) => {
-            if (event.data?.type === "flowindex_connected") {
-              clearTimeout(timeout)
-              window.removeEventListener("message", handler)
-              resolve([event.data.address])
-            }
-            if (event.data?.type === "flowindex_disconnected") {
-              clearTimeout(timeout)
-              window.removeEventListener("message", handler)
-              reject(new Error("User rejected connection"))
-            }
-          }
-          window.addEventListener("message", handler)
+          connectWaiters.push(waiter)
+
+          openPopup()
         })
       }
 
@@ -205,6 +240,7 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
       connectedAddress = null
       chainId = null
       popupReady = false
+      persistSession()
       if (popup && !popup.closed) popup.close()
       popup = null
       emit("disconnect", { code: 4900, message: "Disconnected" })
@@ -216,3 +252,27 @@ export function createFlowDevWalletProvider(config: FlowDevWalletConfig = {}) {
 }
 
 export type FlowDevWalletProvider = ReturnType<typeof createFlowDevWalletProvider>
+
+function getSessionStorageKey(walletUrl: string): string {
+  const normalizedWalletUrl = typeof window !== "undefined"
+    ? new URL(walletUrl, window.location.href).toString()
+    : walletUrl
+  return `flow-dev-wallet:session:${normalizedWalletUrl}`
+}
+
+function readPersistedSession(storageKey: string): PersistedSession | null {
+  if (typeof window === "undefined") return null
+
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as PersistedSession
+    if (!parsed?.connectedAddress) return null
+    return {
+      connectedAddress: parsed.connectedAddress,
+      chainId: typeof parsed.chainId === "number" ? parsed.chainId : null,
+    }
+  } catch {
+    return null
+  }
+}
