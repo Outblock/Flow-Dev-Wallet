@@ -456,13 +456,26 @@ const SignCard = () => {
             <BackButton onClick={() => setCreateType(null)} />
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-400">Username</label>
-              <Input
-                type="text"
-                placeholder="Choose a name for your passkey"
-                value={username}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-700"
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Choose a name for your passkey"
+                  value={username}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-700 flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 border-zinc-700 shrink-0"
+                  onClick={() => setUsername(generateRandomName())}
+                  title="Random name"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </Button>
+              </div>
             </div>
             <Button
               className="bg-[#00EF8B] text-black hover:bg-[#00d67d] font-semibold"
