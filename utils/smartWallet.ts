@@ -163,6 +163,102 @@ function packGasFees(maxPriorityFeePerGas: bigint, maxFeePerGas: bigint): Hex {
   return concat([mpfpg, mfpg]);
 }
 
+function unpackGasLimits(accountGasLimits: Hex): { verificationGasLimit: Hex; callGasLimit: Hex } {
+  const clean = accountGasLimits.startsWith("0x") ? accountGasLimits.slice(2) : accountGasLimits;
+  const padded = clean.padStart(64, "0");
+  return {
+    verificationGasLimit: `0x${padded.slice(0, 32)}` as Hex,
+    callGasLimit: `0x${padded.slice(32, 64)}` as Hex,
+  };
+}
+
+function unpackGasFees(gasFees: Hex): { maxPriorityFeePerGas: Hex; maxFeePerGas: Hex } {
+  const clean = gasFees.startsWith("0x") ? gasFees.slice(2) : gasFees;
+  const padded = clean.padStart(64, "0");
+  return {
+    maxPriorityFeePerGas: `0x${padded.slice(0, 32)}` as Hex,
+    maxFeePerGas: `0x${padded.slice(32, 64)}` as Hex,
+  };
+}
+
+function splitInitCode(initCode?: Hex): { factory?: Address; factoryData?: Hex } {
+  if (!initCode || initCode === "0x") return {};
+  const clean = initCode.startsWith("0x") ? initCode.slice(2) : initCode;
+  if (clean.length < 40) {
+    throw new Error("Invalid initCode: missing factory address");
+  }
+  return {
+    factory: `0x${clean.slice(0, 40)}` as Address,
+    factoryData: (`0x${clean.slice(40)}` || "0x") as Hex,
+  };
+}
+
+function splitPaymasterAndData(paymasterAndData?: Hex): {
+  paymaster?: Address;
+  paymasterVerificationGasLimit?: Hex;
+  paymasterPostOpGasLimit?: Hex;
+  paymasterData?: Hex;
+} {
+  if (!paymasterAndData || paymasterAndData === "0x") return {};
+  const clean = paymasterAndData.startsWith("0x") ? paymasterAndData.slice(2) : paymasterAndData;
+  if (clean.length < 104) {
+    throw new Error("Invalid paymasterAndData: missing gas limits");
+  }
+  return {
+    paymaster: `0x${clean.slice(0, 40)}` as Address,
+    paymasterVerificationGasLimit: `0x${clean.slice(40, 72)}` as Hex,
+    paymasterPostOpGasLimit: `0x${clean.slice(72, 104)}` as Hex,
+    paymasterData: (`0x${clean.slice(104)}` || "0x") as Hex,
+  };
+}
+
+function toBundlerRpcUserOp(userOp: any): any {
+  const rpcUserOp: any = {
+    sender: userOp.sender,
+    nonce: userOp.nonce,
+    callData: userOp.callData,
+    preVerificationGas: userOp.preVerificationGas,
+    signature: userOp.signature ?? "0x",
+  };
+
+  if (userOp.callGasLimit !== undefined && userOp.verificationGasLimit !== undefined) {
+    rpcUserOp.callGasLimit = userOp.callGasLimit;
+    rpcUserOp.verificationGasLimit = userOp.verificationGasLimit;
+  } else if (userOp.accountGasLimits) {
+    Object.assign(rpcUserOp, unpackGasLimits(userOp.accountGasLimits));
+  }
+
+  if (userOp.maxFeePerGas !== undefined && userOp.maxPriorityFeePerGas !== undefined) {
+    rpcUserOp.maxFeePerGas = userOp.maxFeePerGas;
+    rpcUserOp.maxPriorityFeePerGas = userOp.maxPriorityFeePerGas;
+  } else if (userOp.gasFees) {
+    Object.assign(rpcUserOp, unpackGasFees(userOp.gasFees));
+  }
+
+  if (userOp.factory || userOp.factoryData) {
+    rpcUserOp.factory = userOp.factory;
+    rpcUserOp.factoryData = userOp.factoryData;
+  } else {
+    Object.assign(rpcUserOp, splitInitCode(userOp.initCode));
+  }
+
+  if (
+    userOp.paymaster ||
+    userOp.paymasterVerificationGasLimit ||
+    userOp.paymasterPostOpGasLimit ||
+    userOp.paymasterData
+  ) {
+    rpcUserOp.paymaster = userOp.paymaster;
+    rpcUserOp.paymasterVerificationGasLimit = userOp.paymasterVerificationGasLimit;
+    rpcUserOp.paymasterPostOpGasLimit = userOp.paymasterPostOpGasLimit;
+    rpcUserOp.paymasterData = userOp.paymasterData;
+  } else {
+    Object.assign(rpcUserOp, splitPaymasterAndData(userOp.paymasterAndData));
+  }
+
+  return rpcUserOp;
+}
+
 export function computeUserOpHash(
   userOp: any,
   entryPoint: Address,
@@ -200,8 +296,10 @@ function createBundlerClient(bundlerUrl: string) {
     return data.result;
   }
   return {
-    sendUserOperation: (userOp: any, entryPoint: Address) => rpc("eth_sendUserOperation", [userOp, entryPoint]) as Promise<Hex>,
-    estimateUserOperationGas: (userOp: any, entryPoint: Address) => rpc("eth_estimateUserOperationGas", [userOp, entryPoint]),
+    sendUserOperation: (userOp: any, entryPoint: Address) =>
+      rpc("eth_sendUserOperation", [toBundlerRpcUserOp(userOp), entryPoint]) as Promise<Hex>,
+    estimateUserOperationGas: (userOp: any, entryPoint: Address) =>
+      rpc("eth_estimateUserOperationGas", [toBundlerRpcUserOp(userOp), entryPoint]),
     getUserOperationReceipt: (hash: Hex) => rpc("eth_getUserOperationReceipt", [hash]),
   };
 }
