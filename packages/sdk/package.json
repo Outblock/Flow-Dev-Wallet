@@ -1,6 +1,6 @@
 {
   "name": "@outblock/flow-dev-wallet-sdk",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "SDK for integrating Flow Dev Wallet into EVM dApps (wagmi/RainbowKit)",
   "type": "module",
   "main": "./dist/index.js",
