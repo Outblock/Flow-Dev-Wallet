@@ -59,6 +59,9 @@ async function applyUrlParams(store: Record<string, any>, setStore: (s: Record<s
     updated.rpcUrl = rpc;
   }
 
+  // Reconfigure FCL now so address lookups and key derivation use the right network/RPC
+  fclConfig(updated.network, updated.rpcUrl);
+
   // Apply autoSign — mark session so popups know it was activated via URL
   if (autoSign === 'true') {
     updated.autoSign = true;
