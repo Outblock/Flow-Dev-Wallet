@@ -41,8 +41,10 @@ async function applyUrlParams(store: Record<string, any>, setStore: (s: Record<s
   const seed = params.get('seed');
   const network = params.get('network');
   const autoSign = params.get('autoSign');
+  const address = params.get('address');
+  const rpc = params.get('rpc');
 
-  if (!seed && !network && autoSign == null) return false;
+  if (!seed && !network && autoSign == null && !rpc) return false;
 
   let updated = { ...store };
 
@@ -51,6 +53,14 @@ async function applyUrlParams(store: Record<string, any>, setStore: (s: Record<s
     updated.network = network;
     updated.rpcUrl = getDefaultRpc(network);
   }
+
+  // Apply custom RPC (overrides network default)
+  if (rpc) {
+    updated.rpcUrl = rpc;
+  }
+
+  // Reconfigure FCL now so address lookups and key derivation use the right network/RPC
+  fclConfig(updated.network, updated.rpcUrl);
 
   // Apply autoSign — mark session so popups know it was activated via URL
   if (autoSign === 'true') {
@@ -76,7 +86,7 @@ async function applyUrlParams(store: Record<string, any>, setStore: (s: Record<s
       // Try to find associated on-chain address
       try {
         const { findAddressWithPK } = await import("../utils/findAddressWithPK");
-        const accounts = await findAddressWithPK(seed);
+        const accounts = await findAddressWithPK(seed, address || undefined);
         if (accounts && accounts.length > 0) {
           const acct = accounts[0];
           updated.address = acct.address;

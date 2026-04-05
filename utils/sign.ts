@@ -1,6 +1,5 @@
 import { signFlowTransaction } from "@flowindex/flow-passkey";
-import { LocalSigner } from "@flowindex/flow-signer";
-import { HASH_ALGO, KEY_TYPE, SIGN_ALGO } from "./constants";
+import { KEY_TYPE } from "./constants";
 
 interface SignStore {
     id?: string;
@@ -37,6 +36,37 @@ const domainTag = (tag: string): string => {
 }
 
 /**
+ * Sign a hex message with a raw private key using ECDSA.
+ * Uses @noble/hashes for hashing and @noble/curves for signing —
+ * both are pure JS with no Web Crypto or network dependency.
+ * Supports ECDSA_P256 and ECDSA_secp256k1 with SHA2_256 or SHA3_256.
+ */
+async function signEcdsa(pk: string, message: string, sigAlgo: string, hashAlgo: string): Promise<string> {
+    const msgBytes = Buffer.from(message, "hex");
+
+    let hashBytes: Uint8Array;
+    if (hashAlgo === "SHA3_256") {
+        const { sha3_256 } = await import("@noble/hashes/sha3.js");
+        hashBytes = sha3_256(msgBytes);
+    } else {
+        const { sha256 } = await import("@noble/hashes/sha2.js");
+        hashBytes = sha256(msgBytes);
+    }
+
+    const pkBytes = Uint8Array.from(Buffer.from(pk, "hex"));
+    let sigBytes: Uint8Array;
+    if (sigAlgo === "ECDSA_secp256k1") {
+        const { secp256k1 } = await import("@noble/curves/secp256k1.js");
+        sigBytes = secp256k1.sign(hashBytes, pkBytes);
+    } else {
+        const { p256 } = await import("@noble/curves/nist.js");
+        sigBytes = p256.sign(hashBytes, pkBytes);
+    }
+    // sign() returns compact r||s (64 bytes) — convert directly to hex
+    return Buffer.from(sigBytes).toString("hex");
+}
+
+/**
  * Sign a hex-encoded message. Returns { signature, extensionData? }.
  * - Passkey: returns extensionData for FLIP-264
  * - Local key: returns signature only
@@ -47,20 +77,10 @@ const signWithKey = async (store: SignStore, message: string): Promise<SignResul
         return await signWithPassKey(store, message);
     }
 
-    // Local key signing via flow-signer LocalSigner
+    // Local key signing — pure ECDSA, no network calls.
     const { signAlgo, hashAlgo, pk } = store.keyInfo;
-    const signerConfig = {
-        flowindexUrl: process.env.flowindexUrl || "https://flowindex.io",
-        network: (process.env.network || "mainnet") as "mainnet" | "testnet",
-    };
-    const signer = new LocalSigner(signerConfig, {
-        privateKey: pk,
-        sigAlgo: (signAlgo || "ECDSA_P256") as any,
-        hashAlgo: (hashAlgo || "SHA2_256") as any,
-    });
-    await signer.init();
-    const result = await signer.signFlowTransaction(message);
-    return { signature: result.signature };
+    const signature = await signEcdsa(pk, message, signAlgo || "ECDSA_P256", hashAlgo || "SHA2_256");
+    return { signature };
 }
 
 /**
